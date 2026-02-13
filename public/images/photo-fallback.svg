@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" role="img" aria-labelledby="title desc">
+  <title id="title">影像預設圖</title>
+  <desc id="desc">當原始圖片無法載入時顯示的備援圖</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#171717" />
+      <stop offset="55%" stop-color="#232323" />
+      <stop offset="100%" stop-color="#353025" />
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9f8752" stop-opacity="0.18" />
+      <stop offset="50%" stop-color="#e5cc8a" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#9f8752" stop-opacity="0.18" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="1500" fill="url(#bg)" />
+  <circle cx="1020" cy="180" r="220" fill="#e5cc8a" opacity="0.08" />
+  <circle cx="180" cy="1320" r="260" fill="#e5cc8a" opacity="0.06" />
+  <rect x="180" y="240" width="840" height="1020" rx="26" fill="none" stroke="url(#shine)" stroke-width="4" />
+
+  <g transform="translate(600 750)">
+    <rect x="-170" y="-190" width="340" height="380" rx="22" fill="#1e1e1e" stroke="#a58d59" stroke-opacity="0.6" />
+    <circle cx="0" cy="-70" r="56" fill="#a58d59" fill-opacity="0.28" />
+    <rect x="-90" y="10" width="180" height="96" rx="48" fill="#a58d59" fill-opacity="0.24" />
+    <path d="M-120 174 L-20 70 L58 142 L120 86" fill="none" stroke="#e5cc8a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.78" />
+    <circle cx="60" cy="38" r="24" fill="#e5cc8a" fill-opacity="0.55" />
+  </g>
+
+  <text x="600" y="1280" text-anchor="middle" fill="#e5cc8a" font-size="44" letter-spacing="8">影像載入中</text>
+</svg>

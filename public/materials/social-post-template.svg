@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#171717"/>
+      <stop offset="100%" stop-color="#2c271f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#g)"/>
+  <rect x="80" y="80" width="920" height="920" rx="28" fill="none" stroke="#d8bf85" stroke-opacity=".7" stroke-width="4"/>
+  <text x="540" y="510" fill="#d8bf85" text-anchor="middle" font-size="56" letter-spacing="8" font-family="Georgia, serif">SOCIAL POST</text>
+  <text x="540" y="580" fill="#d8bf85" text-anchor="middle" font-size="30" letter-spacing="6" font-family="Georgia, serif">1080 x 1080</text>
+</svg>
