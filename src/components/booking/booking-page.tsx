@@ -85,6 +85,8 @@ export function BookingPageClient() {
   const watchedDetails = useWatch({ control: form.control });
 
   useEffect(() => {
+    // Hydration guard: render client-only calendar state after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
 
     const draft = readDraft();

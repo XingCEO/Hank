@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  lead
+  quoted
+  booked
+  shooting
+  post
+  delivered
+  closed
+}
+
+enum ProjectMemberRole {
+  owner
+  photographer
+  retoucher
+  producer
+}
+
+enum AssetType {
+  raw
+  edited
+  cover
+  document
+}
+
+model User {
+  id               String             @id @default(cuid())
+  email            String             @unique
+  passwordHash     String?            @map("password_hash")
+  name             String
+  phone            String?
+  isActive         Boolean            @default(true) @map("is_active")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  roles            UserRole[]
+  clientProjects   Project[]          @relation("ProjectClient")
+  createdProjects  Project[]          @relation("ProjectCreator")
+  projectMembers   ProjectMember[]
+  uploadedAssets   Asset[]            @relation("AssetUploader")
+  deliveredRecords Delivery[]         @relation("DeliveryBy")
+  statusChanges    ProjectStatusLog[] @relation("StatusChangedBy")
+  auditLogs        AuditLog[]         @relation("AuditActor")
+
+  @@map("users")
+}
+
+model Role {
+  id        Int        @id @default(autoincrement())
+  key       String     @unique
+  name      String
+  createdAt DateTime   @default(now()) @map("created_at")
+  users     UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  roleId    Int      @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Project {
+  id          String             @id @default(cuid())
+  code        String             @unique
+  clientUserId String            @map("client_user_id")
+  title       String
+  status      ProjectStatus      @default(lead)
+  budget      Int?
+  startAt     DateTime?          @map("start_at")
+  endAt       DateTime?          @map("end_at")
+  createdBy   String             @map("created_by")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  client      User               @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: Restrict)
+  creator     User               @relation("ProjectCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  members     ProjectMember[]
+  statusLogs  ProjectStatusLog[]
+  schedules   ShootSchedule[]
+  assets      Asset[]
+  deliveries  Delivery[]
+
+  @@index([clientUserId])
+  @@index([createdBy])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id            String            @id @default(cuid())
+  projectId     String            @map("project_id")
+  userId        String            @map("user_id")
+  roleOnProject ProjectMemberRole @map("role_on_project")
+  joinedAt      DateTime          @default(now()) @map("joined_at")
+  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model ProjectStatusLog {
+  id         String        @id @default(cuid())
+  projectId  String        @map("project_id")
+  fromStatus ProjectStatus @map("from_status")
+  toStatus   ProjectStatus @map("to_status")
+  note       String?
+  changedBy  String        @map("changed_by")
+  changedAt  DateTime      @default(now()) @map("changed_at")
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  changer    User          @relation("StatusChangedBy", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([projectId, changedAt])
+  @@map("project_status_logs")
+}
+
+model ShootSchedule {
+  id         String   @id @default(cuid())
+  projectId  String   @map("project_id")
+  shootDate  DateTime @map("shoot_date")
+  location   String?
+  startAt    DateTime? @map("start_at")
+  endAt      DateTime? @map("end_at")
+  callTime   DateTime? @map("call_time")
+  remark     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, shootDate])
+  @@map("shoot_schedules")
+}
+
+model Asset {
+  id         String   @id @default(cuid())
+  projectId  String   @map("project_id")
+  uploaderId String   @map("uploader_id")
+  type       AssetType
+  bucket     String
+  objectKey  String   @map("object_key")
+  mime       String
+  size       Int
+  checksum   String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader   User     @relation("AssetUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
+  deliveryItems DeliveryItem[]
+
+  @@index([projectId, createdAt])
+  @@map("assets")
+}
+
+model Delivery {
+  id          String         @id @default(cuid())
+  projectId   String         @map("project_id")
+  version     Int
+  note        String?
+  deliveredBy String         @map("delivered_by")
+  deliveredAt DateTime       @default(now()) @map("delivered_at")
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliverer   User           @relation("DeliveryBy", fields: [deliveredBy], references: [id], onDelete: Restrict)
+  items       DeliveryItem[]
+
+  @@unique([projectId, version])
+  @@index([projectId, deliveredAt])
+  @@map("deliveries")
+}
+
+model DeliveryItem {
+  id         String   @id @default(cuid())
+  deliveryId String   @map("delivery_id")
+  assetId    String   @map("asset_id")
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, assetId])
+  @@index([assetId])
+  @@map("delivery_items")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?  @map("actor_user_id")
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  payloadJson  Json?    @map("payload_json")
+  ip           String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  actor        User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([resourceType, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("audit_logs")
+}

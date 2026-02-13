@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
-import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
+import { Reveal } from "@/components/ultra/reveal";
 import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { systemRows } from "@/lib/site-content";
 

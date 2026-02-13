@@ -27,6 +27,7 @@ export const navItems: NavItem[] = [
   { href: "/portfolio", label: "作品集" },
   { href: "/booking", label: "預約" },
   { href: "/materials", label: "素材包" },
+  { href: "/auth", label: "會員" },
 ];
 
 export const heroStats = [
