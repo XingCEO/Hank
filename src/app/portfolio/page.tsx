@@ -23,7 +23,7 @@ export default function PortfolioPage() {
 
   return (
     <PageShell path="/portfolio">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
             <LuxuryHeading

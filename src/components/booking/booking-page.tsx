@@ -203,7 +203,7 @@ export function BookingPageClient() {
 
   return (
     <>
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative">
           <Reveal>
             <LuxuryHeading

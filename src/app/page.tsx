@@ -29,7 +29,7 @@ const promiseCards = [
 export default function HomePage() {
   return (
     <PageShell path="/">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <AmbientBackground />
           <Reveal>

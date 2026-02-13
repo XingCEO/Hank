@@ -5,7 +5,7 @@ import { SectionShell, PremiumCard } from "@/components/ultra/section";
 export default function NotFound() {
   return (
     <PageShell path="/">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <PremiumCard className="mx-auto max-w-3xl text-center">
             <p className="text-xs tracking-[0.24em] text-primary uppercase">404</p>

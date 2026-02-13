@@ -39,7 +39,7 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
 
   return (
     <PageShell path="/portfolio">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra space-y-8">
           <Reveal>
             <div className="max-w-3xl space-y-4">

@@ -6,6 +6,7 @@
 :root {
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
+  --phi: 1.618;
 
   --background: oklch(0.13 0.01 270);
   --foreground: oklch(0.95 0.02 85);
@@ -25,13 +26,19 @@
   --border: oklch(0.35 0.02 82 / 0.45);
   --input: oklch(0.35 0.02 82 / 0.45);
   --ring: oklch(0.74 0.09 78);
-  --radius: 1rem;
+  --radius: 0.95rem;
 
   --surface-1: oklch(0.16 0.01 270 / 0.76);
   --surface-2: oklch(0.2 0.015 270 / 0.82);
   --gold-soft: oklch(0.8 0.06 82 / 0.2);
 
-  --space-section: clamp(4rem, 8vw, 8rem);
+  --space-phi-1: clamp(0.75rem, 0.95vw, 0.95rem);
+  --space-phi-2: clamp(1.2rem, 1.45vw, 1.55rem);
+  --space-phi-3: clamp(1.95rem, 2.35vw, 2.5rem);
+  --space-phi-4: clamp(3.15rem, 3.9vw, 4.1rem);
+  --space-phi-5: clamp(5.1rem, 5.8vw, 6.1rem);
+  --space-section: var(--space-phi-4);
+  --space-top-offset: var(--space-phi-5);
   --shadow-luxury: 0 24px 72px oklch(0.03 0.01 270 / 0.55);
   --shadow-gold: 0 10px 40px oklch(0.74 0.09 78 / 0.18);
   --ease-luxury: cubic-bezier(0.22, 1, 0.36, 1);
@@ -112,7 +119,7 @@
 
 @layer utilities {
   .container-ultra {
-    @apply mx-auto w-[min(1200px,92vw)];
+    @apply mx-auto w-[min(1160px,90vw)];
   }
 
   .luxury-surface {

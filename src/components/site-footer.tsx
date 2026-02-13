@@ -55,9 +55,9 @@ export function SiteFooter() {
   const primaryNavLinks = navItems.filter((item) => item.href !== "/");
 
   return (
-    <footer className="border-t border-border/70 bg-card/20 py-14">
+    <footer className="border-t border-border/70 bg-card/20 py-[var(--space-phi-4)]">
       <div className="container-ultra">
-        <div className="grid gap-10 xl:grid-cols-[1.3fr_1fr_1fr_1fr]">
+        <div className="grid gap-[var(--space-phi-3)] xl:grid-cols-[1.3fr_1fr_1fr_1fr]">
           <div>
             <p className="gold-text text-2xl tracking-[0.18em] uppercase">{siteName}</p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -85,7 +85,7 @@ export function SiteFooter() {
           <FooterLinkList title="支援與社群" links={[...supportLinks, ...socialLinks]} />
         </div>
 
-        <div className="mt-10 grid gap-4 rounded-2xl border border-border/70 bg-background/25 p-5 md:grid-cols-3">
+        <div className="mt-[var(--space-phi-3)] grid gap-4 rounded-2xl border border-border/70 bg-background/25 p-5 md:grid-cols-3">
           <div>
             <p className="text-xs tracking-[0.2em] text-primary uppercase">主要服務據點</p>
             <p className="mt-2 text-sm text-muted-foreground">台北 · 台中 · 高雄 · 線上跨區支援</p>
@@ -100,7 +100,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
+        <div className="mt-6 flex flex-col gap-3 border-t border-border/60 pt-5 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>© {year} {siteName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/terms" className="focus-luxury hover:text-foreground">

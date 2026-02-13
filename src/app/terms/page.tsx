@@ -29,7 +29,7 @@ const terms = [
 export default function TermsPage() {
   return (
     <PageShell path="/terms">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <LuxuryHeading
             kicker="法律資訊"

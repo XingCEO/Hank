@@ -43,7 +43,7 @@ const qualityAssurances = [
 export default function ServicesPage() {
   return (
     <PageShell path="/services">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <AmbientBackground />
           <Reveal>

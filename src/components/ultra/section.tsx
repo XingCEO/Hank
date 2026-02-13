@@ -17,7 +17,7 @@ export function LuxuryHeading({
   className?: string;
 }) {
   return (
-    <header className={cn("max-w-3xl space-y-4", className)}>
+    <header className={cn("max-w-3xl space-y-[var(--space-phi-1)]", className)}>
       <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">{kicker}</p>
       <h2 className="text-4xl leading-tight md:text-5xl">{title}</h2>
       {copy ? <p className="text-base leading-relaxed text-muted-foreground md:text-lg">{copy}</p> : null}
@@ -29,7 +29,7 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
   return (
     <article
       className={cn(
-        "luxury-surface luxury-border rounded-2xl p-6 md:p-8",
+        "luxury-surface luxury-border rounded-[1.45rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]",
         "transition-transform duration-500 ease-[var(--ease-luxury)] hover:-translate-y-1 hover:shadow-[var(--shadow-gold)]",
         className,
       )}

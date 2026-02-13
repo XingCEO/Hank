@@ -72,7 +72,7 @@ const principles = [
 export default function TeamPage() {
   return (
     <PageShell path="/team">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
             <LuxuryHeading

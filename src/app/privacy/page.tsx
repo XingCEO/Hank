@@ -29,7 +29,7 @@ const policyRows = [
 export default function PrivacyPage() {
   return (
     <PageShell path="/privacy">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <LuxuryHeading
             kicker="法律資訊"

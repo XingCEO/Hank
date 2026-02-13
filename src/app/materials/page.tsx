@@ -41,7 +41,7 @@ const materialItems = [
 export default function MaterialsPage() {
   return (
     <PageShell path="/materials">
-      <SectionShell className="pt-28">
+      <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
             <LuxuryHeading
