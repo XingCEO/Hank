@@ -6,6 +6,9 @@ import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
 import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { serviceCards } from "@/lib/site-content";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "尊榮服務",
   description: "頂級攝影服務——從企劃到交付，一站式完成的專業製作系統。",

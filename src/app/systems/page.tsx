@@ -6,6 +6,9 @@ import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
 import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { systemRows } from "@/lib/site-content";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "營運系統",
   description: "驅動銷售管線、排程與交付成果的營運架構。",

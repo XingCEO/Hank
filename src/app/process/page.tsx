@@ -6,6 +6,9 @@ import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
 import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { processSteps } from "@/lib/site-content";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "工作流程 SOP",
   description: "六階段品質管控流程——從需求探索到交付回顧的完整製作工作流程。",

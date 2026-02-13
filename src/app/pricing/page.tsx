@@ -5,6 +5,9 @@ import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
 import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "方案價格",
   description: "透明的價格架構——為頂級攝影製作與長期合作而設計。",
