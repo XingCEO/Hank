@@ -81,8 +81,8 @@ export default function HomePage() {
           <div className="my-8">
             <GoldDivider />
           </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            {caseStudies.slice(0, 4).map((item, index) => (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {caseStudies.slice(0, 6).map((item, index) => (
               <Reveal key={item.slug} delay={index * 0.08}>
                 <Link
                   href={`/cases/${item.slug}`}
@@ -106,6 +106,9 @@ export default function HomePage() {
               </Reveal>
             ))}
           </div>
+          <Reveal delay={0.12} className="mt-8 flex justify-center">
+            <MagneticButton href="/portfolio">查看更多完整作品集</MagneticButton>
+          </Reveal>
         </div>
       </SectionShell>
 
