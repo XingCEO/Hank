@@ -4,17 +4,33 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSessionToken, getSessionCookieOptions } from "@/lib/auth/session";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp } from "@/lib/auth/request";
 import { normalizeRoleKeys } from "@/lib/auth/normalize";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const loginSchema = z.object({
-  email: z.email("請輸入正確的 Email"),
-  password: z.string().min(1, "請輸入密碼"),
+  email: z.email("Please enter a valid email address."),
+  password: z.string().min(1, "Password is required."),
 });
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
+  const clientIp = getClientIpFromRequest(req) ?? "unknown";
+  const rateLimit = consumeRateLimit({
+    key: `auth:login:${clientIp}`,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ ok: false, message: "Too many login attempts. Please try again later." }, { status: 429 });
+  }
+
   try {
     const body = loginSchema.parse(await req.json());
     const email = body.email.toLowerCase().trim();
@@ -31,16 +47,15 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.passwordHash) {
-      return NextResponse.json({ ok: false, message: "帳號或密碼錯誤" }, { status: 401 });
+      return NextResponse.json({ ok: false, message: "Invalid email or password." }, { status: 401 });
     }
-
     if (!user.isActive) {
-      return NextResponse.json({ ok: false, message: "此帳號已停用" }, { status: 403 });
+      return NextResponse.json({ ok: false, message: "Account is disabled." }, { status: 403 });
     }
 
     const valid = await verifyPassword(body.password, user.passwordHash);
     if (!valid) {
-      return NextResponse.json({ ok: false, message: "帳號或密碼錯誤" }, { status: 401 });
+      return NextResponse.json({ ok: false, message: "Invalid email or password." }, { status: 401 });
     }
 
     const session = {
@@ -49,6 +64,7 @@ export async function POST(req: Request) {
       name: user.name,
       roles: normalizeRoleKeys(user.roles.map((item) => item.role.key)),
     };
+
     const token = await createSessionToken(session);
     const response = NextResponse.json({
       ok: true,
@@ -71,14 +87,14 @@ export async function POST(req: Request) {
       resourceType: "user",
       resourceId: user.id,
       payload: { email: user.email },
-      ip: await getRequestIp(),
+      ip: clientIp !== "unknown" ? clientIp : undefined,
     });
 
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "登入資料有誤" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid login payload." }, { status: 400 });
     }
-    return NextResponse.json({ ok: false, message: "登入失敗" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Login failed." }, { status: 500 });
   }
 }

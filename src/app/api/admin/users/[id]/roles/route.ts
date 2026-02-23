@@ -5,10 +5,10 @@ import { requireRoles, requireSession } from "@/lib/auth/request";
 import { ROLE_KEYS } from "@/lib/auth/constants";
 import { ensureBaseRoles } from "@/lib/auth/roles";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp } from "@/lib/auth/request";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const patchRolesSchema = z.object({
-  roles: z.array(z.enum(ROLE_KEYS)).min(1, "至少保留一個角色"),
+  roles: z.array(z.enum(ROLE_KEYS)).min(1, "At least one role is required."),
 });
 
 export const runtime = "nodejs";
@@ -18,6 +18,11 @@ type RouteContext = {
 };
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
   const auth = await requireSession();
   if ("response" in auth) {
     return auth.response;
@@ -35,9 +40,12 @@ export async function PATCH(req: Request, context: RouteContext) {
     const body = patchRolesSchema.parse(await req.json());
     await ensureBaseRoles(prisma);
 
-    const target = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     if (!target) {
-      return NextResponse.json({ ok: false, message: "找不到指定使用者" }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "Target user not found." }, { status: 404 });
     }
 
     const roleRows = await prisma.role.findMany({
@@ -48,9 +56,8 @@ export async function PATCH(req: Request, context: RouteContext) {
       },
       select: { id: true, key: true },
     });
-
     if (roleRows.length !== body.roles.length) {
-      return NextResponse.json({ ok: false, message: "存在未定義的角色" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: "One or more roles are invalid." }, { status: 400 });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -69,14 +76,14 @@ export async function PATCH(req: Request, context: RouteContext) {
       resourceType: "user",
       resourceId: id,
       payload: { roles: body.roles },
-      ip: await getRequestIp(),
+      ip: getClientIpFromRequest(req),
     });
 
     return NextResponse.json({ ok: true, userId: id, roles: body.roles });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "角色更新參數有誤" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid role payload." }, { status: 400 });
     }
-    return NextResponse.json({ ok: false, message: "更新角色失敗" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Failed to update user roles." }, { status: 500 });
   }
 }

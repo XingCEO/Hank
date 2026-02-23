@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp, getRequestSession } from "@/lib/auth/request";
+import { getRequestSession } from "@/lib/auth/request";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(req: Request) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
   const session = await getRequestSession();
+  const clientIp = getClientIpFromRequest(req);
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set({
@@ -23,7 +30,7 @@ export async function POST() {
       action: "auth.logout",
       resourceType: "user",
       resourceId: session.userId,
-      ip: await getRequestIp(),
+      ip: clientIp,
     });
   }
 

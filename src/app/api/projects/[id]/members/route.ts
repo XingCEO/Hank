@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { requireRoles, requireSession } from "@/lib/auth/request";
 import { PROJECT_MEMBER_ROLES } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp } from "@/lib/auth/request";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const addMemberSchema = z.object({
-  userId: z.string().min(1, "請提供 userId"),
+  userId: z.string().min(1, "userId is required."),
   roleOnProject: z.enum(PROJECT_MEMBER_ROLES),
 });
 
@@ -18,6 +18,11 @@ type RouteContext = {
 };
 
 export async function POST(req: Request, context: RouteContext) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
   const auth = await requireSession();
   if ("response" in auth) {
     return auth.response;
@@ -34,9 +39,20 @@ export async function POST(req: Request, context: RouteContext) {
   try {
     const body = addMemberSchema.parse(await req.json());
 
-    const project = await prisma.project.findUnique({ where: { id }, select: { id: true } });
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     if (!project) {
-      return NextResponse.json({ ok: false, message: "找不到專案" }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "Project not found." }, { status: 404 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: body.userId },
+      select: { id: true, isActive: true },
+    });
+    if (!user || !user.isActive) {
+      return NextResponse.json({ ok: false, message: "Invalid member user." }, { status: 400 });
     }
 
     const member = await prisma.projectMember.upsert({
@@ -69,14 +85,14 @@ export async function POST(req: Request, context: RouteContext) {
         userId: body.userId,
         roleOnProject: body.roleOnProject,
       },
-      ip: await getRequestIp(),
+      ip: getClientIpFromRequest(req),
     });
 
     return NextResponse.json({ ok: true, member });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "成員資料格式有誤" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid member payload." }, { status: 400 });
     }
-    return NextResponse.json({ ok: false, message: "指派成員失敗" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Failed to update project member." }, { status: 500 });
   }
 }

@@ -19,8 +19,8 @@ export function MagneticButton({ href, children, className }: MagneticButtonProp
   const handleMove = (event: MouseEvent<HTMLAnchorElement>) => {
     if (reduceMotion || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
-    const x = (event.clientX - rect.left - rect.width / 2) * 0.18;
-    const y = (event.clientY - rect.top - rect.height / 2) * 0.18;
+    const x = (event.clientX - rect.left - rect.width / 2) * 0.12;
+    const y = (event.clientY - rect.top - rect.height / 2) * 0.12;
     setOffset({ x, y });
   };
 
@@ -29,7 +29,7 @@ export function MagneticButton({ href, children, className }: MagneticButtonProp
   return (
     <motion.div
       animate={reduceMotion ? { x: 0, y: 0 } : { x: offset.x, y: offset.y }}
-      transition={{ type: "spring", stiffness: 220, damping: 20, mass: 0.4 }}
+      transition={{ type: "spring", stiffness: 260, damping: 24, mass: 0.35 }}
     >
       <Link
         ref={ref}
@@ -38,8 +38,8 @@ export function MagneticButton({ href, children, className }: MagneticButtonProp
         onMouseLeave={handleReset}
         onBlur={handleReset}
         className={cn(
-          "focus-luxury inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-medium tracking-[0.18em] uppercase transition-colors",
-          "border-primary/40 bg-primary text-primary-foreground hover:border-primary hover:bg-primary/90",
+          "focus-luxury inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-semibold tracking-[0.16em] uppercase transition-colors",
+          "border-primary/30 bg-primary/95 text-primary-foreground hover:border-primary hover:bg-primary",
           className,
         )}
       >

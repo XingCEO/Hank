@@ -11,10 +11,6 @@ export function hasRole(session: AuthSession | null, roles: RoleKey[]): boolean 
 }
 
 export async function canAccessProject(session: AuthSession, projectId: string): Promise<boolean> {
-  if (hasRole(session, ["admin", "super_admin"])) {
-    return true;
-  }
-
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: {
@@ -28,6 +24,10 @@ export async function canAccessProject(session: AuthSession, projectId: string):
 
   if (!project) {
     return false;
+  }
+
+  if (hasRole(session, ["admin", "super_admin"])) {
+    return true;
   }
 
   if (session.roles.includes("customer") && project.clientUserId === session.userId) {

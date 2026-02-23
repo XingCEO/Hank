@@ -18,14 +18,21 @@ export async function createAuditLog({
   payload,
   ip,
 }: CreateAuditLogParams): Promise<void> {
-  await prisma.auditLog.create({
-    data: {
-      actorUserId,
-      action,
-      resourceType,
-      resourceId,
-      payloadJson: payload,
-      ip,
-    },
-  });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId,
+        action,
+        resourceType,
+        resourceId,
+        payloadJson: payload,
+        ip,
+      },
+    });
+  } catch (error) {
+    // Audit logging should not break the primary business operation.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Failed to write audit log:", error);
+    }
+  }
 }

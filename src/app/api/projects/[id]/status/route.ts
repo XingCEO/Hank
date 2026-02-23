@@ -5,7 +5,7 @@ import { canAccessProject, hasRole } from "@/lib/auth/authorization";
 import { requireSession } from "@/lib/auth/request";
 import { PROJECT_STATUSES } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp } from "@/lib/auth/request";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const patchStatusSchema = z.object({
   toStatus: z.enum(PROJECT_STATUSES),
@@ -19,6 +19,11 @@ type RouteContext = {
 };
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
   const auth = await requireSession();
   if ("response" in auth) {
     return auth.response;
@@ -29,19 +34,22 @@ export async function PATCH(req: Request, context: RouteContext) {
 
   const allowed = await canAccessProject(session, id);
   if (!allowed) {
-    return NextResponse.json({ ok: false, message: "無權限修改此專案" }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Forbidden." }, { status: 403 });
   }
 
   if (!hasRole(session, ["admin", "super_admin", "photographer"])) {
-    return NextResponse.json({ ok: false, message: "角色不可修改專案狀態" }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Insufficient role permission." }, { status: 403 });
   }
 
   try {
     const body = patchStatusSchema.parse(await req.json());
 
-    const project = await prisma.project.findUnique({ where: { id }, select: { id: true, status: true } });
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
     if (!project) {
-      return NextResponse.json({ ok: false, message: "找不到專案" }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "Project not found." }, { status: 404 });
     }
 
     if (project.status === body.toStatus) {
@@ -77,14 +85,14 @@ export async function PATCH(req: Request, context: RouteContext) {
         fromStatus: project.status,
         toStatus: body.toStatus,
       },
-      ip: await getRequestIp(),
+      ip: getClientIpFromRequest(req),
     });
 
     return NextResponse.json({ ok: true, project: updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "狀態資料有誤" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid status payload." }, { status: 400 });
     }
-    return NextResponse.json({ ok: false, message: "更新專案狀態失敗" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Failed to update project status." }, { status: 500 });
   }
 }

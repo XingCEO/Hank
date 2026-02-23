@@ -5,15 +5,16 @@ import { canAccessProject, hasRole } from "@/lib/auth/authorization";
 import { requireSession } from "@/lib/auth/request";
 import { ASSET_TYPES } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
-import { getRequestIp } from "@/lib/auth/request";
+import { getDefaultBucket, isStorageConfigured } from "@/lib/storage/s3";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const createAssetSchema = z.object({
   type: z.enum(ASSET_TYPES),
-  bucket: z.string().min(1, "bucket 不可空白"),
-  objectKey: z.string().min(1, "objectKey 不可空白"),
-  mime: z.string().min(1, "mime 不可空白"),
-  size: z.number().int().positive(),
-  checksum: z.string().optional(),
+  bucket: z.string().min(1).max(120),
+  objectKey: z.string().min(1).max(512),
+  mime: z.string().min(1).max(120),
+  size: z.number().int().positive().max(500 * 1024 * 1024),
+  checksum: z.string().max(128).optional(),
 });
 
 export const runtime = "nodejs";
@@ -22,7 +23,15 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_: Request, context: RouteContext) {
+function parseTake(searchParams: URLSearchParams): number {
+  const raw = Number(searchParams.get("take") ?? 50);
+  if (!Number.isFinite(raw)) {
+    return 50;
+  }
+  return Math.min(200, Math.max(1, Math.floor(raw)));
+}
+
+export async function GET(req: Request, context: RouteContext) {
   const auth = await requireSession();
   if ("response" in auth) {
     return auth.response;
@@ -31,25 +40,53 @@ export async function GET(_: Request, context: RouteContext) {
   const { session } = auth;
   const { id } = await context.params;
 
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!project) {
+    return NextResponse.json({ ok: false, message: "Project not found." }, { status: 404 });
+  }
+
   const allowed = await canAccessProject(session, id);
   if (!allowed) {
-    return NextResponse.json({ ok: false, message: "無權限查看素材" }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Forbidden." }, { status: 403 });
   }
+
+  const url = new URL(req.url);
+  const take = parseTake(url.searchParams);
+  const cursor = url.searchParams.get("cursor");
 
   const assets = await prisma.asset.findMany({
     where: { projectId: id },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: {
       uploader: {
         select: { id: true, name: true, email: true },
       },
     },
+    take: take + 1,
+    ...(cursor
+      ? {
+          cursor: { id: cursor },
+          skip: 1,
+        }
+      : {}),
   });
 
-  return NextResponse.json({ ok: true, assets });
+  const hasMore = assets.length > take;
+  const page = hasMore ? assets.slice(0, take) : assets;
+  const nextCursor = hasMore ? page[page.length - 1]?.id : null;
+
+  return NextResponse.json({ ok: true, assets: page, pagination: { take, nextCursor } });
 }
 
 export async function POST(req: Request, context: RouteContext) {
+  const blockedByOrigin = guardSameOrigin(req);
+  if (blockedByOrigin) {
+    return blockedByOrigin;
+  }
+
   const auth = await requireSession();
   if ("response" in auth) {
     return auth.response;
@@ -57,17 +94,37 @@ export async function POST(req: Request, context: RouteContext) {
 
   const { session } = auth;
   const { id } = await context.params;
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!project) {
+    return NextResponse.json({ ok: false, message: "Project not found." }, { status: 404 });
+  }
+
   const allowed = await canAccessProject(session, id);
   if (!allowed) {
-    return NextResponse.json({ ok: false, message: "無權限寫入素材" }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Forbidden." }, { status: 403 });
   }
 
   if (!hasRole(session, ["admin", "super_admin", "photographer"])) {
-    return NextResponse.json({ ok: false, message: "只有管理員/攝影師可上傳素材" }, { status: 403 });
+    return NextResponse.json({ ok: false, message: "Only admin or photographer can create assets." }, { status: 403 });
   }
 
   try {
     const body = createAssetSchema.parse(await req.json());
+
+    if (isStorageConfigured()) {
+      const defaultBucket = getDefaultBucket();
+      if (body.bucket !== defaultBucket) {
+        return NextResponse.json({ ok: false, message: "Bucket does not match configured storage bucket." }, { status: 400 });
+      }
+    }
+
+    if (!body.objectKey.startsWith(`projects/${id}/`) || body.objectKey.includes("..")) {
+      return NextResponse.json({ ok: false, message: "Invalid object key path." }, { status: 400 });
+    }
 
     const asset = await prisma.asset.create({
       data: {
@@ -91,14 +148,14 @@ export async function POST(req: Request, context: RouteContext) {
         projectId: id,
         type: asset.type,
       },
-      ip: await getRequestIp(),
+      ip: getClientIpFromRequest(req),
     });
 
     return NextResponse.json({ ok: true, asset }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "素材資料格式錯誤" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid asset payload." }, { status: 400 });
     }
-    return NextResponse.json({ ok: false, message: "建立素材紀錄失敗" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Failed to create asset." }, { status: 500 });
   }
 }

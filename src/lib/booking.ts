@@ -9,16 +9,16 @@ export type ServicePackage = {
 };
 
 export const servicePackages: ServicePackage[] = [
-  { id: "wedding-story", name: "婚禮敘事拍攝", duration: 120, priceHint: "NT$ 68,000 起", basePrice: 68000 },
-  { id: "brand-editorial", name: "品牌形象拍攝", duration: 90, priceHint: "NT$ 52,000 起", basePrice: 52000 },
-  { id: "portrait-signature", name: "肖像風格拍攝", duration: 60, priceHint: "NT$ 36,000 起", basePrice: 36000 },
+  { id: "wedding-story", name: "Wedding Story", duration: 120, priceHint: "From NT$ 68,000", basePrice: 68000 },
+  { id: "brand-editorial", name: "Brand Editorial", duration: 90, priceHint: "From NT$ 52,000", basePrice: 52000 },
+  { id: "portrait-signature", name: "Portrait Signature", duration: 60, priceHint: "From NT$ 36,000", basePrice: 36000 },
 ];
 
 export const bookingSchema = z.object({
-  fullName: z.string().min(2, "請至少輸入 2 個字元。"),
-  email: z.email("請輸入正確的電子郵件。"),
-  phone: z.string().min(8, "請輸入正確的電話號碼。"),
-  notes: z.string().max(500, "備註最多 500 字。").optional(),
+  fullName: z.string().min(2, "Name must be at least 2 characters."),
+  email: z.email("Please enter a valid email address."),
+  phone: z.string().min(8, "Please enter a valid phone number."),
+  notes: z.string().max(500, "Notes must be 500 characters or less.").optional(),
 });
 
 export type BookingFormData = z.infer<typeof bookingSchema>;

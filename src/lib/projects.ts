@@ -1,4 +1,7 @@
+import { randomBytes } from "node:crypto";
+
 export function generateProjectCode(): string {
-  const seed = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-  return `PJ-${seed}`;
+  const timePart = Date.now().toString(36).toUpperCase();
+  const randomPart = randomBytes(3).toString("hex").toUpperCase();
+  return `PJ-${timePart}${randomPart}`;
 }
