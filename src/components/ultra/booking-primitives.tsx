@@ -12,8 +12,8 @@ export function OptionChip({
       className={cn(
         "focus-luxury rounded-full border px-4 py-2 text-sm transition-colors",
         active
-          ? "border-primary/70 bg-primary text-primary-foreground shadow-[0_10px_24px_oklch(0.62_0.1_210/0.25)]"
-          : "border-border bg-secondary/35 text-secondary-foreground hover:border-primary/60 hover:bg-secondary/55",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/60",
         className,
       )}
       {...props}

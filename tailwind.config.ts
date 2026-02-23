@@ -11,15 +11,15 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        obsidian: "#101821",
-        charcoal: "#182433",
-        cyan: "#45a9e8",
-        aqua: "#53d2bc",
-        mist: "#d6e6f2",
+        obsidian: "#0a0a0a", // Primary dark background
+        charcoal: "#1a1a1a", // Secondary dark background
+        gold: "#D4AF37", // Luxury accent
+        pearl: "#e5e5e5", // Soft white text
+        slate: "#404040", // Muted elements
       },
       fontFamily: {
-        serif: ["var(--font-playfair)", "serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
+        serif: ["var(--font-cinzel)", "serif"],
+        sans: ["var(--font-manrope)", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

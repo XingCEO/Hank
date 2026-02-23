@@ -30,7 +30,7 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
     <article
       className={cn(
         "luxury-surface luxury-border rounded-[1.45rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]",
-        "transition-transform duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-gold)]",
+        "transition-transform duration-500 ease-[var(--ease-luxury)] hover:-translate-y-1 hover:shadow-[var(--shadow-gold)]",
         className,
       )}
     >
@@ -40,7 +40,7 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
 }
 
 export function GoldDivider() {
-  return <div className="h-px w-28 bg-gradient-to-r from-transparent via-primary/85 to-accent/70" aria-hidden="true" />;
+  return <div className="h-px w-28 bg-gradient-to-r from-transparent via-primary/80 to-transparent" aria-hidden="true" />;
 }
 
 export function AmbientBackground() {

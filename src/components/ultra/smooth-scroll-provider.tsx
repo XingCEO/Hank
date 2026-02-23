@@ -9,19 +9,11 @@ type SmoothScrollProviderProps = {
 
 export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reduceMotion.matches) {
-      return;
-    }
-
     const lenis = new Lenis({
-      duration: 0.9,
-      lerp: 0.1,
+      duration: 1.05,
       easing: (t: number) => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1,
-      syncTouch: true,
+      touchMultiplier: 1.2,
     });
 
     let rafId = 0;

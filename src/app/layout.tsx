@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/ultra/smooth-scroll-provider";
 import "./globals.css";
 
-const inter = Manrope({
+const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
 });
 
-const playfair = Cormorant_Garamond({
+const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -17,10 +16,10 @@ const playfair = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: "Studio Pro | 高端影像製作系統",
+    default: "Studio Pro | 暗黑奢華攝影",
     template: "%s | Studio Pro",
   },
-  description: "以策略導向流程打造高端攝影與影像製作，提供可追蹤的預約與交付體驗。",
+  description: "以暗黑奢華美學打造的高端攝影，提供禮賓級預約流程。",
 };
 
 export default function RootLayout({

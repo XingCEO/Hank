@@ -1,34 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/page-shell";
 import { PremiumCard, SectionShell } from "@/components/ultra/section";
 
 type Mode = "login" | "register";
 
-type AuthResponse = {
-  ok?: boolean;
-  message?: string;
-  user?: {
-    name?: string;
-    roles?: string[];
-  };
-};
-
-function resolveDestination(roles: string[] | undefined): string {
-  const safeRoles = roles ?? [];
-  if (safeRoles.includes("super_admin") || safeRoles.includes("admin")) {
-    return "/admin";
-  }
-  if (safeRoles.includes("photographer")) {
-    return "/photographer";
-  }
-  return "/portal";
-}
-
 export default function AuthPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,17 +38,16 @@ export default function AuthPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as AuthResponse;
+      const data = (await response.json()) as { ok?: boolean; message?: string; user?: { name?: string } };
 
       if (!response.ok || !data.ok) {
-        setMessage(data.message ?? "Authentication failed.");
+        setMessage(data.message ?? "操作失敗");
         return;
       }
 
-      setMessage(`Welcome back, ${data.user?.name ?? "member"}! Redirecting...`);
-      router.push(resolveDestination(data.user?.roles));
+      setMessage(`成功，歡迎 ${data.user?.name ?? ""}。你可前往 /portal、/photographer、/admin 測試權限。`);
     } catch {
-      setMessage("Network error. Please try again.");
+      setMessage("系統忙碌，請稍後再試。");
     } finally {
       setLoading(false);
     }
@@ -87,27 +64,26 @@ export default function AuthPage() {
                 onClick={() => setMode("login")}
                 className={`focus-luxury rounded-full border px-4 py-2 text-sm ${mode === "login" ? "border-primary bg-primary text-primary-foreground" : "border-border/70 text-muted-foreground"}`}
               >
-                Sign in
+                登入
               </button>
               <button
                 type="button"
                 onClick={() => setMode("register")}
                 className={`focus-luxury rounded-full border px-4 py-2 text-sm ${mode === "register" ? "border-primary bg-primary text-primary-foreground" : "border-border/70 text-muted-foreground"}`}
               >
-                Register
+                註冊
               </button>
             </div>
 
-            <h1 className="mt-4 text-3xl">{mode === "login" ? "Member Sign In" : "Create Account"}</h1>
+            <h1 className="mt-4 text-3xl">{mode === "login" ? "會員登入" : "建立會員帳號"}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Use your email and password to access the member portal. Permissions decide whether you land in customer,
-              photographer, or admin workspace.
+              第一版以 Email + 密碼為主。管理員可在後台更新角色，切換客戶/攝影師/管理員權限。
             </p>
 
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               {mode === "register" ? (
                 <label className="block text-sm">
-                  <span className="mb-2 block text-muted-foreground">Name</span>
+                  <span className="mb-2 block text-muted-foreground">姓名</span>
                   <input
                     value={name}
                     onChange={(event) => setName(event.target.value)}
@@ -129,7 +105,7 @@ export default function AuthPage() {
               </label>
 
               <label className="block text-sm">
-                <span className="mb-2 block text-muted-foreground">Password</span>
+                <span className="mb-2 block text-muted-foreground">密碼</span>
                 <input
                   type="password"
                   value={password}
@@ -142,7 +118,7 @@ export default function AuthPage() {
 
               {mode === "register" ? (
                 <label className="block text-sm">
-                  <span className="mb-2 block text-muted-foreground">Phone (optional)</span>
+                  <span className="mb-2 block text-muted-foreground">電話（選填）</span>
                   <input
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
@@ -156,7 +132,7 @@ export default function AuthPage() {
                 disabled={loading}
                 className="focus-luxury h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {loading ? "Submitting..." : mode === "login" ? "Sign in" : "Create account"}
+                {loading ? "處理中..." : mode === "login" ? "登入" : "註冊並登入"}
               </button>
             </form>
 

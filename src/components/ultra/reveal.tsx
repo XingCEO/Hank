@@ -16,10 +16,10 @@ export function Reveal({ children, delay = 0, y = 24, className }: RevealProps) 
   return (
     <motion.div
       className={className}
-      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: Math.min(y, 18) }}
+      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y }}
       whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -120px" }}
-      transition={{ delay, duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
@@ -45,7 +45,7 @@ export function StaggerReveal({ children, className }: StaggerRevealProps) {
         show: {
           transition: reduceMotion
             ? undefined
-            : { staggerChildren: 0.09, delayChildren: 0.04 },
+            : { staggerChildren: 0.12, delayChildren: 0.05 },
         },
       }}
     >
@@ -56,7 +56,7 @@ export function StaggerReveal({ children, className }: StaggerRevealProps) {
             hidden: reduceMotion ? { opacity: 1 } : { opacity: 0, y: 18 },
             show: { opacity: 1, y: 0 },
           }}
-          transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
           {child}
         </motion.div>
