@@ -36,6 +36,19 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/photographer` photographer workspace
 - `/admin` admin dashboard
 
+## AI Concierge (Claude)
+Configure these env vars on Zeabur (or `.env`) to enable real model replies:
+
+```bash
+CLAUDE_API_BASE_URL="https://11451487.xyz"
+CLAUDE_API_KEY="<your-api-key>"
+CLAUDE_MODEL="claude-sonnet-4-5"
+CLAUDE_API_STYLE="auto" # auto | anthropic | openai
+CLAUDE_TIMEOUT_MS="15000"
+```
+
+`/api/ai/concierge` keeps rate-limit + same-origin guard and falls back to local FAQ replies if the model endpoint is unavailable.
+
 ## Role Hierarchy
 - `super_admin` (L100): full access, including super admin role management.
 - `admin` (L60): admin dashboard and operations, but cannot manage `super_admin`.

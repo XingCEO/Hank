@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import { NextResponse } from "next/server";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
@@ -13,9 +13,51 @@ type ConciergeAnswer = {
   links?: SuggestionLink[];
 };
 
+type KnowledgeMatch = {
+  score: number;
+  answer: ConciergeAnswer;
+};
+
+type ClaudeApiStyle = "auto" | "anthropic" | "openai";
+
 const askSchema = z.object({
-  message: z.string().trim().min(1, "請先輸入問題。"),
+  message: z
+    .string()
+    .trim()
+    .min(1, "請先輸入問題。")
+    .max(1200, "問題太長，請精簡後再試。"),
 });
+
+const DEFAULT_CLAUDE_BASE_URL = "https://11451487.xyz";
+const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5";
+
+const DEFAULT_SYSTEM_PROMPT = `
+你是 Studio Pro 網站的 AI 客服，同時具備程式技術顧問能力。
+
+請嚴格遵守：
+1. 回覆使用繁體中文，語氣專業、直接、可執行。
+2. 若是網站/會員/後台問題，優先指引用戶正確頁面並給清楚步驟。
+3. 若是程式開發問題，給可落地做法、必要時附短程式碼範例。
+4. 不可捏造系統已執行的操作；不確定時要明確說明限制與下一步。
+5. 不可輸出或要求機密資訊（API key、密碼、token、資料庫連線字串）。
+6. 回覆盡量精簡，先給結論再補重點。
+
+站內常用路徑：
+- /auth：登入註冊
+- /portal：一般會員入口
+- /photographer：攝影師工作區
+- /admin：管理後台
+- /booking：預約
+- /pricing：價格方案
+- /services：服務說明
+- /portfolio：作品集
+- /process：合作流程
+`.trim();
+
+const GENERIC_LINKS: SuggestionLink[] = [
+  { label: "預約諮詢", href: "/booking" },
+  { label: "聯絡我們", href: "/contact" },
+];
 
 const KNOWLEDGE_BASE: Array<{
   keywords: string[];
@@ -91,6 +133,57 @@ const KNOWLEDGE_BASE: Array<{
   },
 ];
 
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+function parsePositiveInt(
+  value: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function parseApiStyle(value: string | undefined): ClaudeApiStyle {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "anthropic" || normalized === "openai") {
+    return normalized;
+  }
+  return "auto";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function buildApiUrl(baseUrl: string, endpointPath: "/v1/messages" | "/v1/chat/completions"): string {
+  const normalized = normalizeBaseUrl(baseUrl);
+  if (normalized.endsWith("/v1")) {
+    return `${normalized}${endpointPath.replace("/v1", "")}`;
+  }
+  return `${normalized}${endpointPath}`;
+}
+
+const claudeBaseUrl = normalizeBaseUrl(
+  process.env.CLAUDE_API_BASE_URL?.trim() || DEFAULT_CLAUDE_BASE_URL,
+);
+const claudeApiKey = process.env.CLAUDE_API_KEY?.trim() ?? "";
+const claudeModel = process.env.CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL;
+const claudeTimeoutMs = parsePositiveInt(process.env.CLAUDE_TIMEOUT_MS, 15000, 4000, 60000);
+const claudeApiStyle = parseApiStyle(process.env.CLAUDE_API_STYLE);
+const conciergeSystemPrompt = process.env.AI_CONCIERGE_SYSTEM_PROMPT?.trim() || DEFAULT_SYSTEM_PROMPT;
+
 function tokenize(input: string): string[] {
   return input
     .toLowerCase()
@@ -99,7 +192,7 @@ function tokenize(input: string): string[] {
     .filter(Boolean);
 }
 
-function pickBestAnswer(message: string): ConciergeAnswer {
+function pickKnowledgeMatch(message: string): KnowledgeMatch {
   const normalized = message.toLowerCase();
   const tokens = new Set(tokenize(normalized));
 
@@ -128,17 +221,207 @@ function pickBestAnswer(message: string): ConciergeAnswer {
   }
 
   if (best) {
-    return best;
+    return { score: bestScore, answer: best };
   }
 
   return {
-    reply:
-      "我先幫你快速整理：你可以告訴我『預算範圍、拍攝類型、預計日期』，我就能更精準建議下一步。",
-    links: [
-      { label: "預約諮詢", href: "/booking" },
-      { label: "聯絡我們", href: "/contact" },
-    ],
+    score: 0,
+    answer: {
+      reply:
+        "我先幫你快速整理：你可以告訴我『預算範圍、拍攝類型、預計日期』，我就能更精準建議下一步。",
+      links: GENERIC_LINKS,
+    },
   };
+}
+
+function normalizeReply(reply: string): string {
+  return reply.replace(/\n{3,}/g, "\n\n").trim().slice(0, 1800);
+}
+
+async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function parseJsonSafely(response: Response): Promise<unknown | null> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function extractErrorMessage(payload: unknown): string | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  if (typeof payload.message === "string" && payload.message.trim()) {
+    return payload.message.trim();
+  }
+
+  const error = payload.error;
+  if (typeof error === "string" && error.trim()) {
+    return error.trim();
+  }
+  if (isRecord(error) && typeof error.message === "string" && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return null;
+}
+
+function extractAnthropicReply(payload: unknown): string | null {
+  if (!isRecord(payload) || !Array.isArray(payload.content)) {
+    return null;
+  }
+
+  const textBlocks: string[] = [];
+  for (const block of payload.content) {
+    if (!isRecord(block)) {
+      continue;
+    }
+    if (block.type === "text" && typeof block.text === "string" && block.text.trim()) {
+      textBlocks.push(block.text.trim());
+    }
+  }
+
+  return textBlocks.length > 0 ? normalizeReply(textBlocks.join("\n\n")) : null;
+}
+
+function extractOpenAiReply(payload: unknown): string | null {
+  if (!isRecord(payload) || !Array.isArray(payload.choices) || payload.choices.length === 0) {
+    return null;
+  }
+
+  const firstChoice = payload.choices[0];
+  if (!isRecord(firstChoice) || !isRecord(firstChoice.message)) {
+    return null;
+  }
+
+  const content = firstChoice.message.content;
+  if (typeof content === "string" && content.trim()) {
+    return normalizeReply(content);
+  }
+
+  if (Array.isArray(content)) {
+    const textParts: string[] = [];
+    for (const part of content) {
+      if (!isRecord(part)) {
+        continue;
+      }
+      if (part.type === "text" && typeof part.text === "string" && part.text.trim()) {
+        textParts.push(part.text.trim());
+      }
+    }
+    if (textParts.length > 0) {
+      return normalizeReply(textParts.join("\n\n"));
+    }
+  }
+
+  return null;
+}
+
+function devWarn(message: string, extra?: unknown) {
+  if (process.env.NODE_ENV !== "production") {
+    if (extra !== undefined) {
+      console.warn(`[ai-concierge] ${message}`, extra);
+      return;
+    }
+    console.warn(`[ai-concierge] ${message}`);
+  }
+}
+
+async function callAnthropicEndpoint(message: string): Promise<string | null> {
+  const response = await fetchWithTimeout(
+    buildApiUrl(claudeBaseUrl, "/v1/messages"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": claudeApiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: claudeModel,
+        system: conciergeSystemPrompt,
+        temperature: 0.25,
+        max_tokens: 800,
+        messages: [{ role: "user", content: message }],
+      }),
+    },
+    claudeTimeoutMs,
+  );
+
+  const payload = await parseJsonSafely(response);
+  if (!response.ok) {
+    devWarn(`Anthropic-compatible endpoint failed: ${response.status}`, extractErrorMessage(payload));
+    return null;
+  }
+
+  return extractAnthropicReply(payload);
+}
+
+async function callOpenAiEndpoint(message: string): Promise<string | null> {
+  const response = await fetchWithTimeout(
+    buildApiUrl(claudeBaseUrl, "/v1/chat/completions"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${claudeApiKey}`,
+      },
+      body: JSON.stringify({
+        model: claudeModel,
+        temperature: 0.25,
+        max_tokens: 800,
+        messages: [
+          { role: "system", content: conciergeSystemPrompt },
+          { role: "user", content: message },
+        ],
+      }),
+    },
+    claudeTimeoutMs,
+  );
+
+  const payload = await parseJsonSafely(response);
+  if (!response.ok) {
+    devWarn(`OpenAI-compatible endpoint failed: ${response.status}`, extractErrorMessage(payload));
+    return null;
+  }
+
+  return extractOpenAiReply(payload);
+}
+
+async function generateClaudeReply(message: string): Promise<string | null> {
+  if (!claudeApiKey) {
+    return null;
+  }
+
+  try {
+    if (claudeApiStyle === "anthropic") {
+      return await callAnthropicEndpoint(message);
+    }
+    if (claudeApiStyle === "openai") {
+      return await callOpenAiEndpoint(message);
+    }
+
+    const anthropicReply = await callAnthropicEndpoint(message);
+    if (anthropicReply) {
+      return anthropicReply;
+    }
+
+    return await callOpenAiEndpoint(message);
+  } catch (error) {
+    devWarn("Claude request failed", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 export const runtime = "nodejs";
@@ -164,12 +447,15 @@ export async function POST(req: Request) {
 
   try {
     const body = askSchema.parse(await req.json());
-    const answer = pickBestAnswer(body.message);
+    const knowledgeMatch = pickKnowledgeMatch(body.message);
+    const aiReply = await generateClaudeReply(body.message);
+    const reply = aiReply ?? knowledgeMatch.answer.reply;
+    const links = knowledgeMatch.score >= 3 ? (knowledgeMatch.answer.links ?? []) : aiReply ? [] : GENERIC_LINKS;
 
     return NextResponse.json({
       ok: true,
-      reply: answer.reply,
-      links: answer.links ?? [],
+      reply,
+      links,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
