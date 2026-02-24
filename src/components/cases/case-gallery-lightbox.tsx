@@ -80,7 +80,7 @@ export function CaseGalleryLightbox({ images, title }: CaseGalleryLightboxProps)
         >
           <button
             type="button"
-            className="focus-luxury absolute top-4 right-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
+            className="focus-ring absolute top-4 right-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
             aria-label="關閉燈箱"
             onClick={() => setActiveIndex(null)}
           >
@@ -89,7 +89,7 @@ export function CaseGalleryLightbox({ images, title }: CaseGalleryLightboxProps)
 
           <button
             type="button"
-            className="focus-luxury absolute left-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
+            className="focus-ring absolute left-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
             aria-label="上一張"
             onClick={(event) => {
               event.stopPropagation();
@@ -121,7 +121,7 @@ export function CaseGalleryLightbox({ images, title }: CaseGalleryLightboxProps)
 
           <button
             type="button"
-            className="focus-luxury absolute right-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
+            className="focus-ring absolute right-4 rounded-full border border-border/80 bg-card/70 p-2 text-muted-foreground hover:text-foreground"
             aria-label="下一張"
             onClick={(event) => {
               event.stopPropagation();

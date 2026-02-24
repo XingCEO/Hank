@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OptionChip, FieldError } from "@/components/ultra/booking-primitives";
 import { Reveal } from "@/components/ultra/reveal";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import {
   bookingSchema,
   createMonthMatrix,
@@ -208,14 +208,14 @@ export function BookingPageClient() {
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="私人預約"
               title="以清楚、禮賓級流程預約您的拍攝時段"
               copy="選擇服務、鎖定日期並填寫專案需求。我們會於 4 個工作小時內回覆每筆申請。"
             />
           </Reveal>
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
         </div>
       </SectionShell>
@@ -224,35 +224,17 @@ export function BookingPageClient() {
         <div className="container-ultra grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <Reveal>
             <PremiumCard>
-              <div className="mb-8 space-y-3">
-                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 1 · 選擇服務</p>
-                <div className="flex flex-wrap gap-3">
-                  {servicePackages.map((item) => (
-                    <OptionChip
-                      key={item.id}
-                      active={serviceId === item.id}
-                      onClick={() => {
-                        setServiceId(item.id);
-                        setSlot("");
-                      }}
-                    >
-                      {item.name}
-                    </OptionChip>
-                  ))}
-                </div>
-              </div>
-
               <div className="mb-8 space-y-4">
-                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 2 · 選擇日期</p>
+                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 1 · 選擇日期</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <div className="rounded-md border border-border/70 bg-secondary/20 px-3 py-2 text-xs text-muted-foreground">
                     可預約：<span className="text-foreground">{availabilityStats.open}</span> 天
                   </div>
-                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                    高需求：<span className="text-amber-100">{availabilityStats.limited}</span> 天
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+                    高需求：<span className="text-amber-900">{availabilityStats.limited}</span> 天
                   </div>
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-red-200">
-                    已滿檔：<span className="text-red-100">{availabilityStats.full}</span> 天
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-red-700">
+                    已滿檔：<span className="text-red-900">{availabilityStats.full}</span> 天
                   </div>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/30 px-3 py-2">
@@ -292,7 +274,7 @@ export function BookingPageClient() {
                               setSlot("");
                             }}
                             className={[
-                              "focus-luxury h-10 rounded-md border text-sm transition-colors",
+                              "focus-ring h-10 rounded-md border text-sm transition-colors",
                               cell.inMonth ? "border-border/70" : "border-transparent opacity-30",
                               isDisabled ? "cursor-not-allowed text-muted-foreground/50" : "hover:border-primary/80",
                               availability === "limited" ? "bg-amber-500/10 border-amber-500/40" : "",
@@ -308,8 +290,8 @@ export function BookingPageClient() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 3 · 選擇時段</p>
+              <div className="mb-8 space-y-4">
+                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 2 · 選擇時段</p>
                 <div className="flex flex-wrap gap-2">
                   {!isMounted ? (
                     <p className="text-sm text-muted-foreground">正在載入可用時段...</p>
@@ -322,6 +304,34 @@ export function BookingPageClient() {
                       </OptionChip>
                     ))
                   )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-xs tracking-[0.26em] text-primary uppercase">步驟 3 · 選擇服務與需求</p>
+                <div className="flex flex-wrap gap-3">
+                  {servicePackages.map((item) => (
+                    <OptionChip
+                      key={item.id}
+                      active={serviceId === item.id}
+                      onClick={() => {
+                        setServiceId(item.id);
+                        setSlot("");
+                      }}
+                    >
+                      {item.name}
+                    </OptionChip>
+                  ))}
+                </div>
+                <div>
+                  <Label htmlFor="notes">專案備註</Label>
+                  <Textarea
+                    id="notes"
+                    className="mt-2 min-h-32 focus-ring"
+                    placeholder="請填寫目標、參考風格、上線日期與使用渠道。"
+                    {...form.register("notes")}
+                  />
+                  <FieldError message={form.formState.errors.notes?.message} />
                 </div>
               </div>
             </PremiumCard>
@@ -391,7 +401,7 @@ export function BookingPageClient() {
                     <div className="mt-3 border-t border-border/70 pt-3">
                       <div className="flex items-center justify-between font-medium">
                         <span>預估總額</span>
-                        <span className="gold-text text-lg">{formatTwd(estimator.total)}</span>
+                        <span className="accent-text text-lg">{formatTwd(estimator.total)}</span>
                       </div>
                     </div>
                   </div>
@@ -401,34 +411,24 @@ export function BookingPageClient() {
 
             <Reveal delay={0.12}>
               <PremiumCard className="h-full">
-                <p className="mb-6 text-xs tracking-[0.26em] text-primary uppercase">步驟 4 · 填寫專案資訊</p>
+                <p className="mb-6 text-xs tracking-[0.26em] text-primary uppercase">步驟 4 · 填寫聯絡資訊</p>
                 <form className="space-y-4" onSubmit={onSubmit}>
                   <div>
                     <Label htmlFor="fullName">姓名</Label>
-                    <Input id="fullName" className="mt-2 focus-luxury" {...form.register("fullName")} />
+                    <Input id="fullName" className="mt-2 focus-ring" {...form.register("fullName")} />
                     <FieldError message={form.formState.errors.fullName?.message} />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="email">電子郵件</Label>
-                      <Input id="email" type="email" className="mt-2 focus-luxury" {...form.register("email")} />
+                      <Input id="email" type="email" className="mt-2 focus-ring" {...form.register("email")} />
                       <FieldError message={form.formState.errors.email?.message} />
                     </div>
                     <div>
                       <Label htmlFor="phone">電話</Label>
-                      <Input id="phone" className="mt-2 focus-luxury" {...form.register("phone")} />
+                      <Input id="phone" className="mt-2 focus-ring" {...form.register("phone")} />
                       <FieldError message={form.formState.errors.phone?.message} />
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">專案備註</Label>
-                    <Textarea
-                      id="notes"
-                      className="mt-2 min-h-32 focus-luxury"
-                      placeholder="請填寫目標、參考風格、上線日期與使用渠道。"
-                      {...form.register("notes")}
-                    />
-                    <FieldError message={form.formState.errors.notes?.message} />
                   </div>
 
                   <div className="rounded-xl border border-border/80 bg-secondary/20 p-4 text-sm">
@@ -446,7 +446,7 @@ export function BookingPageClient() {
                     </div>
                   </div>
 
-                  <Button className="focus-luxury w-full" type="submit" disabled={status === "saving"}>
+                  <Button className="focus-ring w-full" type="submit" disabled={status === "saving"}>
                     {status === "saving" ? "送出中..." : "送出預約申請"}
                   </Button>
 

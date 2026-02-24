@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
 export const metadata: Metadata = {
   title: "團隊",
@@ -75,19 +75,19 @@ export default function TeamPage() {
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="團隊"
               title="以創意公司規格運作的影像團隊"
               copy="我們以明確分工與系統化協作，提供企業級可靠度與一致品質。"
             />
           </Reveal>
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
           <StaggerReveal className="mt-8 grid gap-4 sm:grid-cols-3">
             {stats.map((item) => (
               <PremiumCard key={item.label}>
-                <p className="text-3xl gold-text">{item.value}</p>
+                <p className="text-3xl accent-text">{item.value}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{item.label}</p>
               </PremiumCard>
             ))}
@@ -149,7 +149,7 @@ export default function TeamPage() {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="工作哲學"
               title="系統化思維，藝術家靈魂"
               copy="創意與流程並行，才能持續交付兼具美感與商業效益的作品。"

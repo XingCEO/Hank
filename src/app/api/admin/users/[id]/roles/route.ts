@@ -63,7 +63,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     await prisma.$transaction(async (tx) => {
       await tx.userRole.deleteMany({ where: { userId: id } });
       await tx.userRole.createMany({
-        data: roleRows.map((role) => ({
+        data: roleRows.map((role: { id: number; key: string }) => ({
           userId: id,
           roleId: role.id,
         })),

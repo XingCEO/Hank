@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { Reveal } from "@/components/ultra/reveal";
-import { GoldDivider, LuxuryHeading, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, SectionShell } from "@/components/ultra/section";
 import { caseStudies } from "@/lib/site-content";
 
 export const metadata: Metadata = {
@@ -26,14 +26,14 @@ export default function PortfolioPage() {
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="作品集"
               title="精選高端視覺敘事作品"
               copy="每一個畫面都由策略企劃、場景設計與嚴謹後期製作共同完成。"
             />
           </Reveal>
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
         </div>
       </SectionShell>
@@ -44,7 +44,7 @@ export default function PortfolioPage() {
             {portfolioStats.map((stat) => (
               <div key={stat.label} className="rounded-xl border border-border/70 bg-card/30 p-4">
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">{stat.label}</p>
-                <p className="mt-2 text-3xl gold-text">{stat.value}</p>
+                <p className="mt-2 text-3xl accent-text">{stat.value}</p>
               </div>
             ))}
           </div>
@@ -61,11 +61,11 @@ export default function PortfolioPage() {
                       height={1125}
                       className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/92 via-background/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <div className="absolute right-4 bottom-4 left-4">
-                      <p className="text-xs tracking-[0.2em] text-primary uppercase">{item.category}</p>
-                      <h3 className="mt-2 text-xl">{item.name}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{item.subtitle}</p>
+                      <p className="text-xs tracking-[0.2em] text-white/80 uppercase">{item.category}</p>
+                      <h3 className="mt-2 text-xl text-white">{item.name}</h3>
+                      <p className="mt-1 text-sm text-white/70">{item.subtitle}</p>
                     </div>
                   </div>
                 </Link>

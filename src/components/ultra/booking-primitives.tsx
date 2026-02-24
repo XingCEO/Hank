@@ -10,7 +10,7 @@ export function OptionChip({
     <button
       type="button"
       className={cn(
-        "focus-luxury rounded-full border px-4 py-2 text-sm transition-colors",
+        "focus-ring rounded-full border px-4 py-2 text-sm transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/60",

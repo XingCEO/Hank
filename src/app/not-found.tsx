@@ -16,7 +16,7 @@ export default function NotFound() {
             <div className="mt-8">
               <Link
                 href="/"
-                className="focus-luxury inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-6 py-3 text-sm font-medium tracking-[0.16em] text-primary-foreground uppercase transition-colors hover:border-primary hover:bg-primary/90"
+                className="focus-ring inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-6 py-3 text-sm font-medium tracking-[0.16em] text-primary-foreground uppercase transition-colors hover:border-primary hover:bg-primary/90"
               >
                 返回首頁
               </Link>

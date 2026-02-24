@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
 export const metadata: Metadata = {
   title: "隱私權政策",
@@ -31,13 +31,13 @@ export default function PrivacyPage() {
     <PageShell path="/privacy">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
-          <LuxuryHeading
+          <SectionHeading
             kicker="法律資訊"
             title="隱私權政策"
             copy="我們重視你的個人資料安全，以下說明資料蒐集與使用方式。"
           />
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
         </div>
       </SectionShell>

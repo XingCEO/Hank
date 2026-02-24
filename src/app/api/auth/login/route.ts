@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       userId: user.id,
       email: user.email,
       name: user.name,
-      roles: normalizeRoleKeys(user.roles.map((item) => item.role.key)),
+      roles: normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key)),
     };
 
     const token = await createSessionToken(session);

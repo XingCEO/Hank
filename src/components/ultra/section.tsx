@@ -5,7 +5,7 @@ export function SectionShell({ children, className }: { children: ReactNode; cla
   return <section className={cn("section-space", className)}>{children}</section>;
 }
 
-export function LuxuryHeading({
+export function SectionHeading({
   kicker,
   title,
   copy,
@@ -29,8 +29,8 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
   return (
     <article
       className={cn(
-        "luxury-surface luxury-border rounded-[1.45rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]",
-        "transition-transform duration-500 ease-[var(--ease-luxury)] hover:-translate-y-1 hover:shadow-[var(--shadow-gold)]",
+        "clean-surface clean-border rounded-[1.45rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]",
+        "transition-transform duration-500 ease-[var(--ease-smooth)] hover:-translate-y-1 hover:shadow-[var(--shadow-accent)]",
         className,
       )}
     >
@@ -39,16 +39,6 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
   );
 }
 
-export function GoldDivider() {
+export function AccentDivider() {
   return <div className="h-px w-28 bg-gradient-to-r from-transparent via-primary/80 to-transparent" aria-hidden="true" />;
-}
-
-export function AmbientBackground() {
-  return (
-    <>
-      <span className="ambient-orb -top-16 left-[8%] h-44 w-44 bg-primary/20" />
-      <span className="ambient-orb top-[40%] right-[10%] h-52 w-52 bg-accent/30 [animation-delay:3s]" />
-      <span className="ambient-orb bottom-0 left-1/2 h-56 w-56 -translate-x-1/2 bg-primary/15 [animation-delay:6s]" />
-    </>
-  );
 }

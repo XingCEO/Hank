@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
-import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { processSteps } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
@@ -70,10 +70,10 @@ export default function ProcessPage() {
     <PageShell path="/process">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <AmbientBackground />
+
           <Reveal>
             <div>
-              <LuxuryHeading
+              <SectionHeading
                 kicker="工作流程 SOP"
                 title="為品質管控而工程化的六階段流程"
                 copy="一致性是系統化的成果。每個步驟皆有明確負責人、檢查點與交付物。"
@@ -102,9 +102,9 @@ export default function ProcessPage() {
                   height={1200}
                   className="h-[320px] w-full object-cover md:h-[380px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-5 bottom-5 left-5">
-                  <p className="text-xs tracking-[0.22em] text-primary uppercase">Process Blueprint</p>
+                  <p className="text-xs tracking-[0.22em] text-white/80 uppercase">Process Blueprint</p>
                   <p className="mt-2 text-sm text-foreground/90 md:text-base">
                     從需求到交付全流程可視化管理，確保每次專案都維持同等品質。
                   </p>
@@ -118,7 +118,7 @@ export default function ProcessPage() {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <div className="mb-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
 
           <StaggerReveal className="grid gap-5 lg:grid-cols-2">

@@ -35,9 +35,9 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    users: users.map((user) => ({
+    users: users.map((user: Record<string, unknown> & { roles: { role: { key: string } }[] }) => ({
       ...user,
-      roles: user.roles.map((item) => item.role.key),
+      roles: user.roles.map((item: { role: { key: string } }) => item.role.key),
     })),
   });
 }

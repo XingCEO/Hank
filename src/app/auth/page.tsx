@@ -1,19 +1,54 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "@/components/page-shell";
-import { PremiumCard, SectionShell } from "@/components/ultra/section";
+import { SectionShell } from "@/components/ultra/section";
 
 type Mode = "login" | "register";
 
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+    filter: "blur(4px)",
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    filter: "blur(0px)",
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -60 : 60,
+    opacity: 0,
+    filter: "blur(4px)",
+  }),
+};
+
+const fieldVariants = {
+  hidden: { opacity: 0, height: 0, marginTop: 0 },
+  visible: { opacity: 1, height: "auto", marginTop: 16 },
+};
+
+const inputClass =
+  "focus-ring h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3 text-sm transition-colors focus:border-primary/60";
+
 export default function AuthPage() {
   const [mode, setMode] = useState<Mode>("login");
+  const [direction, setDirection] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setDirection(next === "register" ? 1 : -1);
+    setMode(next);
+    setMessage("");
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,12 +60,7 @@ export default function AuthPage() {
       const payload =
         mode === "login"
           ? { email, password }
-          : {
-              email,
-              password,
-              name,
-              phone: phone || undefined,
-            };
+          : { email, password, name, phone: phone || undefined };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -38,14 +68,20 @@ export default function AuthPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as { ok?: boolean; message?: string; user?: { name?: string } };
+      const data = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        user?: { name?: string };
+      };
 
       if (!response.ok || !data.ok) {
         setMessage(data.message ?? "操作失敗");
         return;
       }
 
-      setMessage(`成功，歡迎 ${data.user?.name ?? ""}。你可前往 /portal、/photographer、/admin 測試權限。`);
+      setMessage(
+        `成功，歡迎 ${data.user?.name ?? ""}。你可前往 /portal、/photographer、/admin 測試權限。`,
+      );
     } catch {
       setMessage("系統忙碌，請稍後再試。");
     } finally {
@@ -56,88 +92,201 @@ export default function AuthPage() {
   return (
     <PageShell path="/auth">
       <SectionShell className="pt-[var(--space-top-offset)]">
-        <div className="container-ultra max-w-xl">
-          <PremiumCard>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className={`focus-luxury rounded-full border px-4 py-2 text-sm ${mode === "login" ? "border-primary bg-primary text-primary-foreground" : "border-border/70 text-muted-foreground"}`}
-              >
-                登入
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("register")}
-                className={`focus-luxury rounded-full border px-4 py-2 text-sm ${mode === "register" ? "border-primary bg-primary text-primary-foreground" : "border-border/70 text-muted-foreground"}`}
-              >
-                註冊
-              </button>
+        <div className="container-ultra max-w-md">
+          <motion.div
+            layout
+            transition={{ layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } }}
+            className="clean-surface clean-border overflow-hidden rounded-2xl p-8"
+          >
+            {/* ── Pill toggle ── */}
+            <div className="relative mx-auto flex w-fit rounded-full border border-border/70 bg-secondary/30 p-1">
+              {(["login", "register"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => switchMode(tab)}
+                  className="focus-ring relative z-10 rounded-full px-6 py-2 text-sm font-medium transition-colors"
+                  style={{
+                    color:
+                      mode === tab
+                        ? "var(--primary-foreground)"
+                        : "var(--muted-foreground)",
+                  }}
+                >
+                  {tab === "login" ? "登入" : "註冊"}
+                  {mode === tab && (
+                    <motion.span
+                      layoutId="auth-pill"
+                      className="absolute inset-0 -z-10 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))}
             </div>
 
-            <h1 className="mt-4 text-3xl">{mode === "login" ? "會員登入" : "建立會員帳號"}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              第一版以 Email + 密碼為主。管理員可在後台更新角色，切換客戶/攝影師/管理員權限。
-            </p>
+            {/* ── Animated heading ── */}
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={mode + "-heading"}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-6 text-center"
+              >
+                <h1 className="text-2xl font-semibold">
+                  {mode === "login" ? "歡迎回來" : "建立帳號"}
+                </h1>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {mode === "login"
+                    ? "登入以管理預約與查看專屬內容"
+                    : "註冊後即可預約拍攝與下載素材"}
+                </p>
+              </motion.div>
+            </AnimatePresence>
 
-            <form onSubmit={onSubmit} className="mt-6 space-y-4">
-              {mode === "register" ? (
+            {/* ── Form ── */}
+            <form onSubmit={onSubmit} className="mt-6">
+              {/* Register-only: name field */}
+              <AnimatePresence initial={false}>
+                {mode === "register" && (
+                  <motion.div
+                    key="name-field"
+                    variants={fieldVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <label className="block text-sm">
+                      <span className="mb-2 block text-muted-foreground">姓名</span>
+                      <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className={inputClass}
+                        required
+                        placeholder="您的姓名"
+                      />
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Shared: email */}
+              <div className="mt-4">
                 <label className="block text-sm">
-                  <span className="mb-2 block text-muted-foreground">姓名</span>
+                  <span className="mb-2 block text-muted-foreground">Email</span>
                   <input
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className="focus-luxury h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={inputClass}
                     required
+                    placeholder="you@example.com"
                   />
                 </label>
-              ) : null}
+              </div>
 
-              <label className="block text-sm">
-                <span className="mb-2 block text-muted-foreground">Email</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="focus-luxury h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3"
-                  required
-                />
-              </label>
-
-              <label className="block text-sm">
-                <span className="mb-2 block text-muted-foreground">密碼</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="focus-luxury h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3"
-                  required
-                  minLength={8}
-                />
-              </label>
-
-              {mode === "register" ? (
+              {/* Shared: password */}
+              <div className="mt-4">
                 <label className="block text-sm">
-                  <span className="mb-2 block text-muted-foreground">電話（選填）</span>
+                  <span className="mb-2 block text-muted-foreground">密碼</span>
                   <input
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    className="focus-luxury h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={inputClass}
+                    required
+                    minLength={8}
+                    placeholder="至少 8 個字元"
                   />
                 </label>
-              ) : null}
+              </div>
 
-              <button
+              {/* Register-only: phone field */}
+              <AnimatePresence initial={false}>
+                {mode === "register" && (
+                  <motion.div
+                    key="phone-field"
+                    variants={fieldVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <label className="block text-sm">
+                      <span className="mb-2 block text-muted-foreground">
+                        電話（選填）
+                      </span>
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className={inputClass}
+                        placeholder="0912-345-678"
+                      />
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Submit */}
+              <motion.button
                 type="submit"
                 disabled={loading}
-                className="focus-luxury h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
+                className="focus-ring mt-6 h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-50"
               >
-                {loading ? "處理中..." : mode === "login" ? "登入" : "註冊並登入"}
-              </button>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={loading ? "loading" : mode}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    className="block"
+                  >
+                    {loading
+                      ? "處理中..."
+                      : mode === "login"
+                        ? "登入"
+                        : "註冊並登入"}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.button>
             </form>
 
-            {message ? <p className="mt-4 text-sm text-muted-foreground">{message}</p> : null}
-          </PremiumCard>
+            {/* ── Toggle hint ── */}
+            <p className="mt-5 text-center text-xs text-muted-foreground">
+              {mode === "login" ? "還沒有帳號？" : "已有帳號？"}
+              <button
+                type="button"
+                onClick={() => switchMode(mode === "login" ? "register" : "login")}
+                className="focus-ring ml-1 font-medium text-primary hover:underline"
+              >
+                {mode === "login" ? "立即註冊" : "返回登入"}
+              </button>
+            </p>
+
+            {/* ── Status message ── */}
+            <AnimatePresence>
+              {message && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  className="mt-4 text-center text-sm text-muted-foreground"
+                >
+                  {message}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </SectionShell>
     </PageShell>
