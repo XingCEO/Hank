@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { PROJECT_STATUSES, type ProjectStatusKey, type RoleKey } from "@/lib/auth/constants";
+import { ROLE_LEVEL_ORDER_DESC, ROLE_POLICY } from "@/lib/auth/policy";
 
 type AdminDashboardProps = {
   currentUserName: string;
@@ -77,21 +78,15 @@ type PatchRolesResponse = {
   message?: string;
 };
 
-const ROLE_ORDER: RoleKey[] = ["customer", "photographer", "admin", "super_admin"];
+const ROLE_ORDER: RoleKey[] = [...ROLE_LEVEL_ORDER_DESC].reverse();
 
-const ROLE_LABEL: Record<RoleKey, string> = {
-  customer: "客戶",
-  photographer: "攝影師",
-  admin: "管理員",
-  super_admin: "超級管理員",
-};
+const ROLE_LABEL: Record<RoleKey, string> = Object.fromEntries(
+  ROLE_LEVEL_ORDER_DESC.map((role) => [role, ROLE_POLICY[role].label]),
+) as Record<RoleKey, string>;
 
-const ROLE_HINT: Record<RoleKey, string> = {
-  customer: "可查看自己案件與下載素材",
-  photographer: "可更新案件狀態並上傳素材",
-  admin: "可管理一般人員、案件與後台資料",
-  super_admin: "可管理包含超管在內的所有角色",
-};
+const ROLE_HINT: Record<RoleKey, string> = Object.fromEntries(
+  ROLE_LEVEL_ORDER_DESC.map((role) => [role, ROLE_POLICY[role].description]),
+) as Record<RoleKey, string>;
 
 function formatDateTime(value: string): string {
   const date = new Date(value);
@@ -374,6 +369,21 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
           <p className="text-3xl">{kpi?.totalDeliveries ?? 0}</p>
         </PremiumCard>
       </div>
+
+      <PremiumCard className="space-y-3">
+        <p className="text-xs tracking-[0.22em] text-primary uppercase">權限分級</p>
+        <h2 className="text-2xl">角色階層（由高至低）</h2>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {ROLE_LEVEL_ORDER_DESC.map((role) => (
+            <div key={role} className="rounded-xl border border-border/70 bg-background/30 px-3 py-2">
+              <p className="text-sm font-medium">
+                L{ROLE_POLICY[role].level} - {ROLE_POLICY[role].label}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{ROLE_POLICY[role].description}</p>
+            </div>
+          ))}
+        </div>
+      </PremiumCard>
 
       <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
         <PremiumCard className="space-y-4">

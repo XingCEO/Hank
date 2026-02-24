@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "@/components/page-shell";
 import { SectionShell } from "@/components/ultra/section";
+import type { RoleKey } from "@/lib/auth/constants";
+import { canAccessDashboardPath, getDefaultDashboardPath, normalizeNextPath } from "@/lib/auth/policy";
 
 type Mode = "login" | "register";
 
@@ -34,6 +37,7 @@ const inputClass =
   "focus-ring h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3 text-sm transition-colors focus:border-primary/60";
 
 export default function AuthPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [direction, setDirection] = useState(0);
   const [email, setEmail] = useState("");
@@ -71,7 +75,7 @@ export default function AuthPage() {
       const data = (await response.json()) as {
         ok?: boolean;
         message?: string;
-        user?: { name?: string };
+        user?: { name?: string; roles?: RoleKey[] };
       };
 
       if (!response.ok || !data.ok) {
@@ -79,9 +83,16 @@ export default function AuthPage() {
         return;
       }
 
-      setMessage(
-        `成功，歡迎 ${data.user?.name ?? ""}。你可前往 /portal、/photographer、/admin 測試權限。`,
+      const roles = data.user?.roles ?? [];
+      const nextPath = normalizeNextPath(
+        typeof window === "undefined" ? null : new URL(window.location.href).searchParams.get("next"),
       );
+      const fallbackPath = getDefaultDashboardPath(roles);
+      const redirectTo = nextPath && canAccessDashboardPath(roles, nextPath) ? nextPath : fallbackPath;
+
+      setMessage(`成功，歡迎 ${data.user?.name ?? ""}。正在跳轉至 ${redirectTo}...`);
+      router.push(redirectTo);
+      router.refresh();
     } catch {
       setMessage("系統忙碌，請稍後再試。");
     } finally {

@@ -36,6 +36,22 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/photographer` photographer workspace
 - `/admin` admin dashboard
 
+## Role Hierarchy
+- `super_admin` (L100): full access, including super admin role management.
+- `admin` (L60): admin dashboard and operations, but cannot manage `super_admin`.
+- `photographer` (L30): assigned-project operations, status update, asset upload flow.
+- `customer` (L10): own-project viewing and download access.
+
+## Bootstrap Super Admin
+Use this once on a configured database to create/reset the top-level administrator:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL='your-admin-email@example.com' \
+BOOTSTRAP_ADMIN_PASSWORD='your-strong-password' \
+BOOTSTRAP_ADMIN_NAME='Your Admin Name' \
+npm run auth:bootstrap-super-admin
+```
+
 ## API (MVP)
 - Auth
   - `POST /api/auth/register`
