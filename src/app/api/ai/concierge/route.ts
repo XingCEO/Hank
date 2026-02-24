@@ -28,7 +28,7 @@ const askSchema = z.object({
     .max(1200, "問題太長，請精簡後再試。"),
 });
 
-const DEFAULT_CLAUDE_BASE_URL = "https://11451487.xyz";
+const DEFAULT_CLAUDE_BASE_URL = "https://api.anthropic.com";
 const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5";
 
 const DEFAULT_SYSTEM_PROMPT = `
@@ -142,7 +142,23 @@ const KNOWLEDGE_BASE: Array<{
 ];
 
 function normalizeBaseUrl(url: string): string {
-  return url.replace(/\/+$/, "");
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    parsed.search = "";
+    parsed.hash = "";
+
+    const normalizedPath = parsed.pathname.replace(/\/+$/, "");
+    parsed.pathname = normalizedPath.toLowerCase() === "/console" ? "" : normalizedPath;
+
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return trimmed.replace(/\/+$/, "").replace(/\/console$/i, "");
+  }
 }
 
 function parsePositiveInt(
@@ -191,6 +207,8 @@ const claudeModel = process.env.CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL;
 const claudeTimeoutMs = parsePositiveInt(process.env.CLAUDE_TIMEOUT_MS, 15000, 4000, 60000);
 const claudeApiStyle = parseApiStyle(process.env.CLAUDE_API_STYLE);
 const conciergeSystemPrompt = process.env.AI_CONCIERGE_SYSTEM_PROMPT?.trim() || DEFAULT_SYSTEM_PROMPT;
+const isClaudeConfigured = claudeApiKey.length > 0;
+const forceAiLogs = process.env.AI_CONCIERGE_LOG === "1";
 
 function tokenize(input: string): string[] {
   return input
@@ -239,6 +257,34 @@ function pickKnowledgeMatch(message: string): KnowledgeMatch {
         "我先幫你快速整理：你可以告訴我『預算範圍、拍攝類型、預計日期』，我就能更精準建議下一步。",
       links: GENERIC_LINKS,
     },
+  };
+}
+
+function summarizeMessageForFallback(message: string): string {
+  const compact = message.replace(/\s+/g, " ").trim();
+  if (!compact) {
+    return "";
+  }
+  return compact.length > 32 ? `${compact.slice(0, 32)}...` : compact;
+}
+
+function buildGuidedFallback(message: string): ConciergeAnswer {
+  const summary = summarizeMessageForFallback(message);
+  const prefix = summary
+    ? `我先幫你整理你剛剛提到的重點：「${summary}」。`
+    : "我先幫你整理目前需求。";
+  const modeHint =
+    process.env.NODE_ENV !== "production" && !isClaudeConfigured
+      ? "目前 AI 模型尚未設定（CLAUDE_API_KEY 為空），先以 FAQ 模式回覆。"
+      : "我先用網站 FAQ 協助你快速釐清方向。";
+
+  return {
+    reply: `${prefix}${modeHint}你可以補充「預算範圍、拍攝類型、預計日期」，我就能更精準建議下一步。`,
+    links: [
+      { label: "查看價格方案", href: "/pricing" },
+      { label: "立即預約諮詢", href: "/booking" },
+      { label: "聯絡團隊", href: "/contact" },
+    ],
   };
 }
 
@@ -362,7 +408,7 @@ function extractOpenAiReply(payload: unknown): string | null {
 }
 
 function devWarn(message: string, extra?: unknown) {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" || forceAiLogs) {
     if (extra !== undefined) {
       console.warn(`[ai-concierge] ${message}`, extra);
       return;
@@ -434,6 +480,7 @@ async function callOpenAiEndpoint(message: string): Promise<string | null> {
 
 async function generateClaudeReply(message: string): Promise<string | null> {
   if (!claudeApiKey) {
+    devWarn("Claude API key is missing; falling back to FAQ mode.");
     return null;
   }
 
@@ -515,13 +562,15 @@ export async function POST(req: Request) {
     }
 
     const aiReply = await generateClaudeReply(body.message);
-    const reply = aiReply ?? knowledgeMatch.answer.reply;
-    const links = knowledgeMatch.score >= 3 ? (knowledgeMatch.answer.links ?? []) : aiReply ? [] : GENERIC_LINKS;
+    const fallbackAnswer =
+      !aiReply && knowledgeMatch.score === 0 ? buildGuidedFallback(body.message) : knowledgeMatch.answer;
+    const reply = aiReply ?? fallbackAnswer.reply;
+    const links = knowledgeMatch.score >= 3 ? (knowledgeMatch.answer.links ?? []) : aiReply ? [] : fallbackAnswer.links;
 
     return NextResponse.json({
       ok: true,
       reply,
-      links,
+      links: links ?? GENERIC_LINKS,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

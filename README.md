@@ -47,12 +47,16 @@ Open [http://localhost:3000](http://localhost:3000).
 Configure these env vars on Zeabur (or `.env`) to enable real model replies:
 
 ```bash
-CLAUDE_API_BASE_URL="https://11451487.xyz"
+CLAUDE_API_BASE_URL="https://api.anthropic.com"
 CLAUDE_API_KEY="<your-api-key>"
 CLAUDE_MODEL="claude-sonnet-4-5"
 CLAUDE_API_STYLE="auto" # auto | anthropic | openai
 CLAUDE_TIMEOUT_MS="15000"
+AI_CONCIERGE_LOG="0" # set to 1 to print AI endpoint failure reasons in production logs
 ```
+
+After changing env vars on Zeabur, trigger a redeploy/restart so runtime containers load the new values.
+If your provider console URL is like `https://.../console`, use the API host as `CLAUDE_API_BASE_URL` (without `/console`).
 
 `/api/ai/concierge` keeps rate-limit + same-origin guard and falls back to local FAQ replies if the model endpoint is unavailable.
 
