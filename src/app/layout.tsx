@@ -19,6 +19,8 @@ const siteUrlCandidate =
   process.env.SITE_URL ??
   process.env.APP_URL ??
   process.env.ZEABUR_URL ??
+  process.env.ZEABUR_PUBLIC_URL ??
+  process.env.ZEABUR_PUBLIC_DOMAIN ??
   process.env.VERCEL_PROJECT_PRODUCTION_URL ??
   process.env.VERCEL_URL ??
   "http://localhost:3000";
