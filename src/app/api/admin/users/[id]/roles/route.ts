@@ -8,7 +8,7 @@ import { createAuditLog } from "@/lib/audit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const patchRolesSchema = z.object({
-  roles: z.array(z.enum(ROLE_KEYS)).min(1, "At least one role is required."),
+  roles: z.array(z.enum(ROLE_KEYS)).min(1, "每個帳號至少要保留一個角色。"),
 });
 
 export const runtime = "nodejs";
@@ -46,23 +46,36 @@ export async function PATCH(req: Request, context: RouteContext) {
         id: true,
         roles: {
           include: {
-            role: true,
+            role: {
+              select: {
+                key: true,
+              },
+            },
           },
         },
       },
     });
+
     if (!target) {
-      return NextResponse.json({ ok: false, message: "Target user not found." }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "找不到目標會員。" }, { status: 404 });
     }
 
     const actorIsSuperAdmin = session.roles.includes("super_admin");
     const targetRoleKeys = target.roles.map((item) => item.role.key);
     const targetIsSuperAdmin = targetRoleKeys.includes("super_admin");
     const updateIncludesSuperAdmin = body.roles.includes("super_admin");
+
     if (!actorIsSuperAdmin && (targetIsSuperAdmin || updateIncludesSuperAdmin)) {
       return NextResponse.json(
-        { ok: false, message: "Only super admins can manage super admin roles." },
+        { ok: false, message: "只有最高管理者可以管理最高管理者角色。" },
         { status: 403 },
+      );
+    }
+
+    if (id === session.userId && !body.roles.some((role) => role === "admin" || role === "super_admin")) {
+      return NextResponse.json(
+        { ok: false, message: "不能移除自己所有後台管理權限。" },
+        { status: 400 },
       );
     }
 
@@ -74,8 +87,9 @@ export async function PATCH(req: Request, context: RouteContext) {
       },
       select: { id: true, key: true },
     });
+
     if (roleRows.length !== body.roles.length) {
-      return NextResponse.json({ ok: false, message: "One or more roles are invalid." }, { status: 400 });
+      return NextResponse.json({ ok: false, message: "角色資料不合法。" }, { status: 400 });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -100,8 +114,12 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json({ ok: true, userId: id, roles: body.roles });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid role payload." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: error.issues[0]?.message ?? "角色資料格式錯誤。" },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ ok: false, message: "Failed to update user roles." }, { status: 500 });
+
+    return NextResponse.json({ ok: false, message: "更新角色失敗。" }, { status: 500 });
   }
 }

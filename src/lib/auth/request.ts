@@ -1,4 +1,4 @@
-import { cookies, headers } from "next/headers";
+﻿import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionFromCookies, type AuthSession } from "@/lib/auth/session";
 import { hasRole } from "@/lib/auth/authorization";
@@ -14,7 +14,7 @@ export async function requireSession(): Promise<{ session: AuthSession } | { res
 
   if (!session) {
     return {
-      response: NextResponse.json({ ok: false, message: "請先登入" }, { status: 401 }),
+      response: NextResponse.json({ ok: false, message: "請先登入。" }, { status: 401 }),
     };
   }
 
@@ -26,7 +26,7 @@ export function requireRoles(session: AuthSession, roles: RoleKey[]): NextRespon
     return null;
   }
 
-  return NextResponse.json({ ok: false, message: "權限不足" }, { status: 403 });
+  return NextResponse.json({ ok: false, message: "權限不足。" }, { status: 403 });
 }
 
 export async function getRequestIp(): Promise<string | undefined> {

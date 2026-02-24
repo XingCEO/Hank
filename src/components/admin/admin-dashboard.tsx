@@ -1,20 +1,21 @@
-"use client";
+﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowRight,
-  Crown,
+  CheckCircle2,
   Filter,
   FolderKanban,
   Images,
+  LockKeyhole,
   RefreshCcw,
   Search,
   ShieldCheck,
   Truck,
+  UserCog,
   Users,
+  UserX,
 } from "lucide-react";
 import { PremiumCard } from "@/components/ultra/section";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { canAccessDashboardPath, ROLE_LEVEL_ORDER_DESC, ROLE_POLICY } from "@/li
 import { cn } from "@/lib/utils";
 
 type AdminDashboardProps = {
+  currentUserId: string;
   currentUserName: string;
   currentUserRoles: RoleKey[];
 };
@@ -93,6 +95,13 @@ type PatchRolesResponse = {
   message?: string;
 };
 
+type PatchUserStatusResponse = {
+  ok: boolean;
+  userId?: string;
+  isActive?: boolean;
+  message?: string;
+};
+
 type RoleFilter = "all" | RoleKey;
 type ActiveFilter = "all" | "active" | "inactive";
 
@@ -114,7 +123,7 @@ function formatDateTime(value: string): string {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("zh-TW", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -130,7 +139,7 @@ function formatRelativeTime(value: string): string {
   }
 
   const diffMinutes = Math.round((date.getTime() - Date.now()) / 60000);
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat("zh-TW", { numeric: "auto" });
 
   if (Math.abs(diffMinutes) < 60) {
     return rtf.format(diffMinutes, "minute");
@@ -183,12 +192,12 @@ async function requestJson<T extends { ok?: boolean; message?: string }>(
   }
 
   if (!response.ok || payload?.ok === false) {
-    const message = payload?.message ?? `Request failed (${response.status})`;
+    const message = payload?.message ?? `請求失敗（${response.status}）`;
     throw new Error(message);
   }
 
   if (!payload) {
-    throw new Error("Unexpected empty response.");
+    throw new Error("伺服器回應為空。");
   }
 
   return payload;
@@ -209,7 +218,7 @@ function getRoleChipClass(role: RoleKey): string {
   }
 }
 
-export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashboardProps) {
+export function AdminDashboard({ currentUserId, currentUserName, currentUserRoles }: AdminDashboardProps) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [kpi, setKpi] = useState<AdminKpi | null>(null);
@@ -223,6 +232,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSavingRoles, setIsSavingRoles] = useState(false);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [resultMessage, setResultMessage] = useState("");
@@ -264,11 +274,13 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
     for (const role of ROLE_LEVEL_ORDER_DESC) {
       map.set(role, 0);
     }
+
     for (const user of users) {
       for (const role of user.roles) {
         map.set(role, (map.get(role) ?? 0) + 1);
       }
     }
+
     return map;
   }, [users]);
 
@@ -294,6 +306,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
   }, [statusCountByKey]);
 
   const selectedIsProtected = Boolean(selectedUser && !isSuperAdmin && selectedUser.roles.includes("super_admin"));
+  const cannotDeactivateSelf = Boolean(selectedUser && selectedUser.id === currentUserId && selectedUser.isActive);
 
   const roleSaveDisabled = useMemo(() => {
     if (!selectedUser || isSavingRoles || draftRoles.length === 0) {
@@ -302,8 +315,23 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
     if (selectedIsProtected) {
       return true;
     }
+
     return roleSetEquals(draftRoles, selectedUser.roles);
   }, [draftRoles, isSavingRoles, selectedIsProtected, selectedUser]);
+
+  const statusToggleDisabled = useMemo(() => {
+    if (!selectedUser || isSavingStatus) {
+      return true;
+    }
+    if (selectedIsProtected) {
+      return true;
+    }
+    if (cannotDeactivateSelf) {
+      return true;
+    }
+
+    return false;
+  }, [cannotDeactivateSelf, isSavingStatus, selectedIsProtected, selectedUser]);
 
   const loadDashboard = async (mode: "initial" | "refresh") => {
     if (mode === "initial") {
@@ -313,7 +341,6 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
     }
 
     setErrorMessage("");
-    setResultMessage("");
 
     try {
       const [usersResponse, logsResponse, kpiResponse] = await Promise.all([
@@ -326,7 +353,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
       setLogs(logsResponse.logs ?? []);
       setKpi(kpiResponse.kpi ?? null);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load admin dashboard.";
+      const message = error instanceof Error ? error.message : "讀取管理後台資料失敗。";
       setErrorMessage(message);
     } finally {
       if (mode === "initial") {
@@ -357,6 +384,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
       setDraftRoles([]);
       return;
     }
+
     setDraftRoles(orderedRoles(selectedUser.roles));
   }, [selectedUser]);
 
@@ -371,7 +399,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
       return;
     }
     if (draftRoles.includes(role) && draftRoles.length === 1) {
-      setErrorMessage("Each account must keep at least one role.");
+      setErrorMessage("每個帳號至少要保留一個角色。");
       return;
     }
 
@@ -381,6 +409,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
       if (current.includes(role)) {
         return orderedRoles(current.filter((item) => item !== role));
       }
+
       return orderedRoles([...current, role]);
     });
   };
@@ -416,111 +445,99 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
         body: JSON.stringify({ roles }),
       });
 
-      setResultMessage(`Updated ${selectedUser.name} roles: ${roles.join(", ")}`);
       await loadDashboard("refresh");
+      setResultMessage(`已更新 ${selectedUser.name} 的角色：${roles.join("、")}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update user roles.";
+      const message = error instanceof Error ? error.message : "更新角色失敗。";
       setErrorMessage(message);
     } finally {
       setIsSavingRoles(false);
     }
   };
 
+  const onToggleUserActive = async () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    const nextIsActive = !selectedUser.isActive;
+    setIsSavingStatus(true);
+    setResultMessage("");
+    setErrorMessage("");
+
+    try {
+      await requestJson<PatchUserStatusResponse>(`/api/admin/users/${selectedUser.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: nextIsActive }),
+      });
+
+      await loadDashboard("refresh");
+      setResultMessage(`${selectedUser.name} 已${nextIsActive ? "啟用" : "停用"}。`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "更新會員狀態失敗。";
+      setErrorMessage(message);
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
   const accessPreviewRoles = selectedUser ? draftRoles : currentUserRoles;
 
   return (
-    <div className="container-ultra space-y-5">
-      <section className="clean-surface clean-border relative overflow-hidden rounded-[1.55rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,oklch(0.78_0.08_235_/_0.18),transparent_58%)]" />
-        <div className="pointer-events-none absolute -top-28 -right-24 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative z-10 space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-3">
-              <p className="text-xs tracking-[0.28em] text-primary uppercase">Admin Command Center</p>
-              <h1 className="text-3xl leading-tight md:text-4xl">Member, Role, and Audit Control</h1>
-              <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-                Signed in as <span className="font-medium text-foreground">{currentUserName}</span>. Keep access levels clean, verify every change, and monitor recent privileged actions from one place.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {orderedRoles(currentUserRoles).map((role) => (
-                  <span
-                    key={`current-role-${role}`}
-                    className={cn("rounded-full border px-2.5 py-1 text-xs", getRoleChipClass(role))}
-                  >
-                    {ROLE_LABEL[role]}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => void loadDashboard("refresh")} disabled={isInitialLoading || isRefreshing || isSavingRoles}>
-                <RefreshCcw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
-                {isRefreshing ? "Refreshing..." : "Refresh"}
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/portal">
-                  Portal
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/photographer">
-                  Photographer
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
+    <div className="w-full space-y-6 px-4 md:px-6 xl:px-8">
+      <PremiumCard className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs tracking-[0.25em] text-primary uppercase">後台管理中心</p>
+            <h1 className="mt-2 text-3xl">會員與權限總控台</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              目前登入：{currentUserName}。可在此管理會員權限、啟用狀態與檢視稽核紀錄。
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {orderedRoles(currentUserRoles).map((role) => (
+                <span
+                  key={`current-role-${role}`}
+                  className={cn("rounded-full border px-2.5 py-1 text-xs", getRoleChipClass(role))}
+                >
+                  {ROLE_LABEL[role]}
+                </span>
+              ))}
             </div>
           </div>
 
-          {errorMessage ? (
-            <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </p>
-          ) : null}
-          {resultMessage ? (
-            <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200">
-              {resultMessage}
-            </p>
-          ) : null}
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3">
-              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Directory</p>
-              <p className="mt-2 text-2xl">{users.length}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {userSummary.active} active / {userSummary.inactive} inactive
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3">
-              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Privileged</p>
-              <p className="mt-2 text-2xl">{userSummary.superAdmins}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Accounts with super admin access</p>
-            </div>
-            <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3">
-              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Recent Audit</p>
-              <p className="mt-2 text-2xl">{logs.length}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Latest event {logs[0] ? formatRelativeTime(logs[0].createdAt) : "not available"}
-              </p>
-            </div>
-          </div>
+          <Button onClick={() => void loadDashboard("refresh")} disabled={isInitialLoading || isRefreshing || isSavingRoles || isSavingStatus}>
+            <RefreshCcw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
+            {isRefreshing ? "更新中" : "重新整理"}
+          </Button>
         </div>
-      </section>
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {errorMessage ? (
+          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errorMessage}
+          </p>
+        ) : null}
+        {resultMessage ? (
+          <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200">
+            {resultMessage}
+          </p>
+        ) : null}
+      </PremiumCard>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Total Users", value: kpi?.totalUsers ?? users.length, icon: Users },
-          { label: "Projects", value: kpi?.totalProjects ?? 0, icon: FolderKanban },
-          { label: "Assets", value: kpi?.totalAssets ?? 0, icon: Images },
-          { label: "Deliveries", value: kpi?.totalDeliveries ?? 0, icon: Truck },
+          { title: "會員總數", value: kpi?.totalUsers ?? users.length, icon: Users },
+          { title: "專案總數", value: kpi?.totalProjects ?? 0, icon: FolderKanban },
+          { title: "素材總數", value: kpi?.totalAssets ?? 0, icon: Images },
+          { title: "交付總數", value: kpi?.totalDeliveries ?? 0, icon: Truck },
         ].map((item) => {
           const Icon = item.icon;
+
           return (
-            <PremiumCard key={item.label} className="space-y-2">
+            <PremiumCard key={item.title} className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs tracking-[0.2em] text-primary uppercase">{item.label}</p>
-                <span className="rounded-lg border border-border/70 bg-background/50 p-1.5">
+                <p className="text-sm text-muted-foreground">{item.title}</p>
+                <span className="rounded-lg border border-border/70 bg-background/60 p-1.5">
                   <Icon className="size-4 text-primary" />
                 </span>
               </div>
@@ -530,40 +547,15 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
         })}
       </div>
 
-      <PremiumCard className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-xs tracking-[0.22em] text-primary uppercase">Role Hierarchy</p>
-            <h2 className="mt-2 text-2xl">Permission Ladder</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">Higher levels inherit lower-level dashboard access.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {ROLE_LEVEL_ORDER_DESC.map((role) => (
-            <article key={role} className="rounded-xl border border-border/70 bg-background/35 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">
-                  L{ROLE_POLICY[role].level} {ROLE_LABEL[role]}
-                </p>
-                <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", getRoleChipClass(role))}>
-                  {rolePopulation.get(role) ?? 0}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">{ROLE_HINT[role]}</p>
-            </article>
-          ))}
-        </div>
-      </PremiumCard>
-
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-6 2xl:grid-cols-[1.6fr_1fr]">
         <PremiumCard className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <p className="text-xs tracking-[0.22em] text-primary uppercase">Member Directory</p>
-              <h2 className="mt-2 text-2xl">Search, Filter, and Edit Roles</h2>
+              <p className="text-xs tracking-[0.24em] text-primary uppercase">會員管理</p>
+              <h2 className="mt-2 text-2xl">權限與帳號狀態</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Showing {filteredUsers.length} / {users.length} users
+              顯示 {filteredUsers.length} / {users.length} 位會員
             </p>
           </div>
 
@@ -573,7 +565,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name, email, or user id"
+                placeholder="搜尋姓名、Email、會員 ID"
                 className="pl-9"
               />
             </label>
@@ -585,7 +577,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                 onChange={(event) => setRoleFilter(event.target.value as RoleFilter)}
                 className="h-9 w-full bg-transparent text-sm outline-none"
               >
-                <option value="all">All roles</option>
+                <option value="all">全部角色</option>
                 {ROLE_LEVEL_ORDER_DESC.map((role) => (
                   <option key={role} value={role}>
                     {ROLE_LABEL[role]}
@@ -601,19 +593,19 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                 onChange={(event) => setActiveFilter(event.target.value as ActiveFilter)}
                 className="h-9 w-full bg-transparent text-sm outline-none"
               >
-                <option value="all">All status</option>
-                <option value="active">Active only</option>
-                <option value="inactive">Inactive only</option>
+                <option value="all">全部狀態</option>
+                <option value="active">啟用中</option>
+                <option value="inactive">停用中</option>
               </select>
             </label>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-            <div className="max-h-[36rem] space-y-2 overflow-y-auto pr-1">
+          <div className="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
+            <div className="max-h-[42rem] space-y-2 overflow-y-auto pr-1">
               {isInitialLoading ? (
-                <p className="text-sm text-muted-foreground">Loading users...</p>
+                <p className="text-sm text-muted-foreground">會員資料讀取中...</p>
               ) : filteredUsers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No user matches the current filters.</p>
+                <p className="text-sm text-muted-foreground">找不到符合條件的會員。</p>
               ) : (
                 filteredUsers.map((user) => {
                   const isSelected = selectedUserId === user.id;
@@ -644,13 +636,13 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                               : "border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-200",
                           )}
                         >
-                          {user.isActive ? "Active" : "Inactive"}
+                          {user.isActive ? "啟用" : "停用"}
                         </span>
                       </div>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", getRoleChipClass(primaryRole))}>
-                          Primary: {ROLE_LABEL[primaryRole]}
+                          主要角色：{ROLE_LABEL[primaryRole]}
                         </span>
                         {orderedRoles(user.roles).map((role) => (
                           <span key={`${user.id}-${role}`} className="rounded-full border border-border/70 px-2 py-0.5 text-[11px]">
@@ -665,30 +657,48 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
             </div>
             <div className="rounded-xl border border-border/70 bg-background/35 p-4">
               {!selectedUser ? (
-                <p className="text-sm text-muted-foreground">Select a user to inspect and edit role assignments.</p>
+                <p className="text-sm text-muted-foreground">請先選取左側會員以編輯設定。</p>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-medium">{selectedUser.name}</p>
-                      {selectedUser.roles.includes("super_admin") ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] text-rose-700 dark:text-rose-200">
-                          <Crown className="size-3.5" />
-                          Super Admin
-                        </span>
-                      ) : null}
-                    </div>
+                    <p className="text-lg font-medium">{selectedUser.name}</p>
                     <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Created {formatDateTime(selectedUser.createdAt)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">建立時間：{formatDateTime(selectedUser.createdAt)}</p>
                   </div>
 
                   {selectedIsProtected ? (
                     <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-200">
-                      This account includes super admin access. Only a super admin can modify these roles.
+                      這是最高管理者帳號。你目前權限不足，無法修改其狀態與角色。
                     </p>
                   ) : null}
 
+                  {cannotDeactivateSelf ? (
+                    <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-200">
+                      不能停用自己目前登入中的帳號。
+                    </p>
+                  ) : null}
+
+                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">帳號狀態</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-xs",
+                          selectedUser.isActive
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                            : "border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-200",
+                        )}
+                      >
+                        {selectedUser.isActive ? "目前為啟用" : "目前為停用"}
+                      </span>
+                      <Button size="sm" variant="outline" onClick={() => void onToggleUserActive()} disabled={statusToggleDisabled}>
+                        {isSavingStatus ? "處理中" : selectedUser.isActive ? "停用帳號" : "啟用帳號"}
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">角色設定</p>
                     {ROLE_LEVEL_ORDER_DESC.map((role) => {
                       const checked = draftRoles.includes(role);
                       const disabled = selectedIsProtected || (!isSuperAdmin && role === "super_admin");
@@ -718,15 +728,10 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Quick Presets</p>
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">快速套用</p>
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onApplyPreset(["customer"])}
-                        disabled={selectedIsProtected}
-                      >
-                        Customer
+                      <Button size="sm" variant="outline" onClick={() => onApplyPreset(["customer"])} disabled={selectedIsProtected}>
+                        一般會員
                       </Button>
                       <Button
                         size="sm"
@@ -734,7 +739,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                         onClick={() => onApplyPreset(["customer", "photographer"])}
                         disabled={selectedIsProtected}
                       >
-                        Photographer
+                        攝影師
                       </Button>
                       <Button
                         size="sm"
@@ -742,7 +747,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                         onClick={() => onApplyPreset(["customer", "admin"])}
                         disabled={selectedIsProtected}
                       >
-                        Admin
+                        管理員
                       </Button>
                       {isSuperAdmin ? (
                         <Button
@@ -751,14 +756,14 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                           onClick={() => onApplyPreset(["customer", "admin", "super_admin"])}
                           disabled={selectedIsProtected}
                         >
-                          Super Admin
+                          最高管理者
                         </Button>
                       ) : null}
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/70 bg-background/45 p-3">
-                    <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Dashboard Access Preview</p>
+                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">路由權限預覽</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-3">
                       {ACCESS_TEST_ROUTES.map((path) => {
                         const allowed = canAccessDashboardPath(accessPreviewRoles, path);
@@ -773,7 +778,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                                   : "text-zinc-600 dark:text-zinc-400",
                               )}
                             >
-                              {allowed ? "Accessible" : "Blocked"}
+                              {allowed ? "可存取" : "不可存取"}
                             </p>
                           </div>
                         );
@@ -784,20 +789,20 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                   {draftRoles.length === 0 ? (
                     <p className="inline-flex items-center gap-1 text-xs text-destructive">
                       <AlertTriangle className="size-3.5" />
-                      At least one role is required.
+                      每個帳號至少要保留一個角色。
                     </p>
                   ) : null}
 
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={() => void onSaveRoles()} disabled={roleSaveDisabled}>
-                      {isSavingRoles ? "Saving..." : "Save Role Changes"}
+                      {isSavingRoles ? "儲存中" : "儲存角色變更"}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => selectedUser && setDraftRoles(orderedRoles(selectedUser.roles))}
                       disabled={isSavingRoles || !selectedUser || roleSetEquals(draftRoles, selectedUser.roles)}
                     >
-                      Reset
+                      還原
                     </Button>
                   </div>
                 </div>
@@ -806,12 +811,38 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
           </div>
         </PremiumCard>
 
-        <div className="grid gap-5">
+        <div className="grid gap-6">
           <PremiumCard className="space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs tracking-[0.22em] text-primary uppercase">Project Pipeline</p>
-                <h2 className="mt-2 text-2xl">Status Distribution</h2>
+                <p className="text-xs tracking-[0.24em] text-primary uppercase">角色階層</p>
+                <h2 className="mt-2 text-2xl">權限分級</h2>
+              </div>
+              <LockKeyhole className="size-5 text-primary" />
+            </div>
+
+            <div className="space-y-2">
+              {ROLE_LEVEL_ORDER_DESC.map((role) => (
+                <div key={role} className="rounded-lg border border-border/70 bg-background/35 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">
+                      L{ROLE_POLICY[role].level} {ROLE_LABEL[role]}
+                    </p>
+                    <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", getRoleChipClass(role))}>
+                      {rolePopulation.get(role) ?? 0} 人
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{ROLE_HINT[role]}</p>
+                </div>
+              ))}
+            </div>
+          </PremiumCard>
+
+          <PremiumCard className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs tracking-[0.24em] text-primary uppercase">專案狀態</p>
+                <h2 className="mt-2 text-2xl">流程分布</h2>
               </div>
               <ShieldCheck className="size-5 text-primary" />
             </div>
@@ -826,7 +857,7 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
                     <div className="flex items-center justify-between text-sm">
                       <span>{status}</span>
                       <span className="text-muted-foreground">
-                        {count} ({ratio}%)
+                        {count}（{ratio}%）
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-secondary/70">
@@ -841,29 +872,29 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
           <PremiumCard className="space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs tracking-[0.22em] text-primary uppercase">Audit Timeline</p>
-                <h2 className="mt-2 text-2xl">Latest 200 Events</h2>
+                <p className="text-xs tracking-[0.24em] text-primary uppercase">稽核紀錄</p>
+                <h2 className="mt-2 text-2xl">最近 200 筆</h2>
               </div>
               <Activity className="size-5 text-primary" />
             </div>
 
-            <div className="max-h-[30rem] overflow-y-auto rounded-xl border border-border/70 bg-background/35">
+            <div className="max-h-[24rem] overflow-y-auto rounded-xl border border-border/70 bg-background/35">
               {isInitialLoading ? (
-                <p className="p-4 text-sm text-muted-foreground">Loading logs...</p>
+                <p className="p-4 text-sm text-muted-foreground">讀取中...</p>
               ) : logs.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground">No audit logs available.</p>
+                <p className="p-4 text-sm text-muted-foreground">目前沒有稽核紀錄。</p>
               ) : (
                 <div className="divide-y divide-border/70">
                   {logs.map((log) => (
                     <article key={log.id} className="space-y-1 px-4 py-3 text-sm">
                       <p className="font-medium">{log.action}</p>
                       <p className="text-xs text-muted-foreground">
-                        Actor: {log.actor?.name ?? "System"} | Resource: {log.resourceType}
+                        操作者：{log.actor?.name ?? "System"}｜資源：{log.resourceType}
                         {log.resourceId ? `:${log.resourceId}` : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDateTime(log.createdAt)} ({formatRelativeTime(log.createdAt)})
-                        {log.ip ? ` | IP ${log.ip}` : ""}
+                        {formatDateTime(log.createdAt)}（{formatRelativeTime(log.createdAt)}）
+                        {log.ip ? `｜IP ${log.ip}` : ""}
                       </p>
                     </article>
                   ))}
@@ -872,6 +903,30 @@ export function AdminDashboard({ currentUserName, currentUserRoles }: AdminDashb
             </div>
           </PremiumCard>
         </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CheckCircle2 className="size-4 text-emerald-600" />
+            啟用會員
+          </div>
+          <p className="text-2xl">{userSummary.active}</p>
+        </PremiumCard>
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <UserX className="size-4 text-zinc-600" />
+            停用會員
+          </div>
+          <p className="text-2xl">{userSummary.inactive}</p>
+        </PremiumCard>
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <UserCog className="size-4 text-rose-600" />
+            最高管理者
+          </div>
+          <p className="text-2xl">{userSummary.superAdmins}</p>
+        </PremiumCard>
       </div>
     </div>
   );
