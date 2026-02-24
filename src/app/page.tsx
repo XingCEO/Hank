@@ -5,6 +5,7 @@ import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
 import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { HomeAiConcierge } from "@/components/ai/home-ai-concierge";
 import { brandPartners, caseStudies, heroStats, testimonials } from "@/lib/site-content";
 
 export const metadata: Metadata = {
@@ -187,6 +188,7 @@ export default function HomePage() {
           </Reveal>
         </div>
       </SectionShell>
+      <HomeAiConcierge />
     </PageShell>
   );
 }
