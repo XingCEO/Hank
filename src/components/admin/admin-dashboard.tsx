@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PROJECT_STATUSES, type ProjectStatusKey, type RoleKey } from "@/lib/auth/constants";
 import { canAccessDashboardPath, ROLE_LEVEL_ORDER_DESC, ROLE_POLICY } from "@/lib/auth/policy";
+import { MEMBERSHIP_LABEL, MEMBERSHIP_TIERS, type MembershipTier } from "@/lib/auth/membership";
 import { cn } from "@/lib/utils";
 
 type AdminDashboardProps = {
@@ -37,6 +38,7 @@ type AdminUser = {
   isActive: boolean;
   createdAt: string;
   roles: RoleKey[];
+  membershipTier: MembershipTier;
 };
 
 type AuditActor = {
@@ -102,8 +104,22 @@ type PatchUserStatusResponse = {
   message?: string;
 };
 
+type PatchMembershipResponse = {
+  ok: boolean;
+  userId?: string;
+  tier?: MembershipTier;
+  message?: string;
+};
+
+type PatchPasswordResponse = {
+  ok: boolean;
+  userId?: string;
+  message?: string;
+};
+
 type RoleFilter = "all" | RoleKey;
 type ActiveFilter = "all" | "active" | "inactive";
+type MembershipFilter = "all" | MembershipTier;
 
 const ROLE_ASSIGNMENT_ORDER: RoleKey[] = [...ROLE_LEVEL_ORDER_DESC].reverse();
 
@@ -218,6 +234,19 @@ function getRoleChipClass(role: RoleKey): string {
   }
 }
 
+function getMembershipChipClass(tier: MembershipTier): string {
+  switch (tier) {
+    case "basic":
+      return "border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-200";
+    case "pro":
+      return "border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200";
+    case "ultra":
+      return "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-200";
+    default:
+      return "border-border bg-secondary/60 text-secondary-foreground";
+  }
+}
+
 export function AdminDashboard({ currentUserId, currentUserName, currentUserRoles }: AdminDashboardProps) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
@@ -226,13 +255,22 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
+  const [membershipFilter, setMembershipFilter] = useState<MembershipFilter>("all");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [draftRoles, setDraftRoles] = useState<RoleKey[]>([]);
+  const [draftTier, setDraftTier] = useState<MembershipTier>("basic");
+
+  const [resetPassword, setResetPassword] = useState("");
+  const [selfCurrentPassword, setSelfCurrentPassword] = useState("");
+  const [selfNewPassword, setSelfNewPassword] = useState("");
 
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSavingRoles, setIsSavingRoles] = useState(false);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isSavingTier, setIsSavingTier] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isChangingOwnPassword, setIsChangingOwnPassword] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [resultMessage, setResultMessage] = useState("");
@@ -251,10 +289,11 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
       const matchesRole = roleFilter === "all" || user.roles.includes(roleFilter);
       const matchesActive =
         activeFilter === "all" || (activeFilter === "active" ? user.isActive : !user.isActive);
+      const matchesMembership = membershipFilter === "all" || user.membershipTier === membershipFilter;
 
-      return matchesKeyword && matchesRole && matchesActive;
+      return matchesKeyword && matchesRole && matchesActive && matchesMembership;
     });
-  }, [activeFilter, roleFilter, search, users]);
+  }, [activeFilter, membershipFilter, roleFilter, search, users]);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
@@ -265,8 +304,11 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
     const active = users.filter((user) => user.isActive).length;
     const inactive = users.length - active;
     const superAdmins = users.filter((user) => user.roles.includes("super_admin")).length;
+    const basic = users.filter((user) => user.membershipTier === "basic").length;
+    const pro = users.filter((user) => user.membershipTier === "pro").length;
+    const ultra = users.filter((user) => user.membershipTier === "ultra").length;
 
-    return { active, inactive, superAdmins };
+    return { active, inactive, superAdmins, basic, pro, ultra };
   }, [users]);
 
   const rolePopulation = useMemo(() => {
@@ -307,6 +349,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
 
   const selectedIsProtected = Boolean(selectedUser && !isSuperAdmin && selectedUser.roles.includes("super_admin"));
   const cannotDeactivateSelf = Boolean(selectedUser && selectedUser.id === currentUserId && selectedUser.isActive);
+  const selectedIsSelf = Boolean(selectedUser && selectedUser.id === currentUserId);
 
   const roleSaveDisabled = useMemo(() => {
     if (!selectedUser || isSavingRoles || draftRoles.length === 0) {
@@ -332,6 +375,36 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
 
     return false;
   }, [cannotDeactivateSelf, isSavingStatus, selectedIsProtected, selectedUser]);
+
+  const tierSaveDisabled = useMemo(() => {
+    if (!selectedUser || isSavingTier) {
+      return true;
+    }
+    if (selectedIsProtected) {
+      return true;
+    }
+
+    return selectedUser.membershipTier === draftTier;
+  }, [draftTier, isSavingTier, selectedIsProtected, selectedUser]);
+
+  const resetPasswordDisabled = useMemo(() => {
+    if (!selectedUser || isResettingPassword) {
+      return true;
+    }
+    if (selectedIsProtected) {
+      return true;
+    }
+
+    return resetPassword.trim().length < 8;
+  }, [isResettingPassword, resetPassword, selectedIsProtected, selectedUser]);
+
+  const changeOwnPasswordDisabled = useMemo(() => {
+    if (!selectedIsSelf || isChangingOwnPassword) {
+      return true;
+    }
+
+    return selfCurrentPassword.trim().length === 0 || selfNewPassword.trim().length < 8;
+  }, [isChangingOwnPassword, selfCurrentPassword, selfNewPassword, selectedIsSelf]);
 
   const loadDashboard = async (mode: "initial" | "refresh") => {
     if (mode === "initial") {
@@ -382,10 +455,18 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
   useEffect(() => {
     if (!selectedUser) {
       setDraftRoles([]);
+      setDraftTier("basic");
+      setResetPassword("");
+      setSelfCurrentPassword("");
+      setSelfNewPassword("");
       return;
     }
 
     setDraftRoles(orderedRoles(selectedUser.roles));
+    setDraftTier(selectedUser.membershipTier);
+    setResetPassword("");
+    setSelfCurrentPassword("");
+    setSelfNewPassword("");
   }, [selectedUser]);
 
   const onToggleRole = (role: RoleKey) => {
@@ -482,17 +563,107 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
     }
   };
 
+  const onSaveMembership = async () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    setIsSavingTier(true);
+    setResultMessage("");
+    setErrorMessage("");
+
+    try {
+      await requestJson<PatchMembershipResponse>(`/api/admin/users/${selectedUser.id}/membership`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: draftTier }),
+      });
+
+      await loadDashboard("refresh");
+      setResultMessage(`已更新 ${selectedUser.name} 的會員等級為 ${MEMBERSHIP_LABEL[draftTier]}。`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "更新會員等級失敗。";
+      setErrorMessage(message);
+    } finally {
+      setIsSavingTier(false);
+    }
+  };
+
+  const onResetPassword = async () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    const password = resetPassword.trim();
+    if (password.length < 8) {
+      setErrorMessage("重設密碼至少 8 碼。");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setResultMessage("");
+    setErrorMessage("");
+
+    try {
+      await requestJson<PatchPasswordResponse>(`/api/admin/users/${selectedUser.id}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: password }),
+      });
+
+      setResetPassword("");
+      setResultMessage(`已重設 ${selectedUser.name} 的登入密碼。`);
+      await loadDashboard("refresh");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "重設密碼失敗。";
+      setErrorMessage(message);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const onChangeOwnPassword = async () => {
+    if (!selectedIsSelf) {
+      return;
+    }
+
+    setIsChangingOwnPassword(true);
+    setResultMessage("");
+    setErrorMessage("");
+
+    try {
+      await requestJson<{ ok: boolean; message?: string }>("/api/auth/change-password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: selfCurrentPassword,
+          newPassword: selfNewPassword,
+        }),
+      });
+
+      setSelfCurrentPassword("");
+      setSelfNewPassword("");
+      setResultMessage("已更新目前登入帳號密碼。請妥善保存新密碼。");
+      await loadDashboard("refresh");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "變更密碼失敗。";
+      setErrorMessage(message);
+    } finally {
+      setIsChangingOwnPassword(false);
+    }
+  };
+
   const accessPreviewRoles = selectedUser ? draftRoles : currentUserRoles;
 
   return (
-    <div className="w-full space-y-6 px-4 md:px-6 xl:px-8">
-      <PremiumCard className="space-y-4">
+    <div className="mx-auto w-full max-w-[1540px] space-y-4 px-4 md:px-5 xl:px-6">
+      <PremiumCard className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs tracking-[0.25em] text-primary uppercase">後台管理中心</p>
             <h1 className="mt-2 text-3xl">會員與權限總控台</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              目前登入：{currentUserName}。可在此管理會員權限、啟用狀態與檢視稽核紀錄。
+              目前登入：{currentUserName}。可在此管理會員權限、會員等級與密碼。
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {orderedRoles(currentUserRoles).map((role) => (
@@ -506,7 +677,10 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
             </div>
           </div>
 
-          <Button onClick={() => void loadDashboard("refresh")} disabled={isInitialLoading || isRefreshing || isSavingRoles || isSavingStatus}>
+          <Button
+            onClick={() => void loadDashboard("refresh")}
+            disabled={isInitialLoading || isRefreshing || isSavingRoles || isSavingStatus || isSavingTier}
+          >
             <RefreshCcw className={cn("size-4", isRefreshing ? "animate-spin" : "")} />
             {isRefreshing ? "更新中" : "重新整理"}
           </Button>
@@ -524,7 +698,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
         ) : null}
       </PremiumCard>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { title: "會員總數", value: kpi?.totalUsers ?? users.length, icon: Users },
           { title: "專案總數", value: kpi?.totalProjects ?? 0, icon: FolderKanban },
@@ -547,19 +721,19 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
         })}
       </div>
 
-      <div className="grid gap-6 2xl:grid-cols-[1.6fr_1fr]">
-        <PremiumCard className="space-y-4">
+      <div className="grid gap-4 2xl:grid-cols-[1.55fr_1fr]">
+        <PremiumCard className="space-y-3">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-xs tracking-[0.24em] text-primary uppercase">會員管理</p>
-              <h2 className="mt-2 text-2xl">權限與帳號狀態</h2>
+              <h2 className="mt-1.5 text-2xl">權限、等級、密碼</h2>
             </div>
             <p className="text-sm text-muted-foreground">
               顯示 {filteredUsers.length} / {users.length} 位會員
             </p>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr]">
+          <div className="grid gap-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             <label className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -598,10 +772,26 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                 <option value="inactive">停用中</option>
               </select>
             </label>
+
+            <label className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2">
+              <UserCog className="size-4 text-muted-foreground" />
+              <select
+                value={membershipFilter}
+                onChange={(event) => setMembershipFilter(event.target.value as MembershipFilter)}
+                className="h-9 w-full bg-transparent text-sm outline-none"
+              >
+                <option value="all">全部等級</option>
+                {MEMBERSHIP_TIERS.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {MEMBERSHIP_LABEL[tier]}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
-            <div className="max-h-[42rem] space-y-2 overflow-y-auto pr-1">
+          <div className="grid gap-3 xl:grid-cols-[1.05fr_1fr]">
+            <div className="max-h-[40rem] space-y-2 overflow-y-auto pr-1">
               {isInitialLoading ? (
                 <p className="text-sm text-muted-foreground">會員資料讀取中...</p>
               ) : filteredUsers.length === 0 ? (
@@ -617,7 +807,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                       type="button"
                       onClick={() => setSelectedUserId(user.id)}
                       className={cn(
-                        "w-full rounded-xl border px-4 py-3 text-left transition-colors",
+                        "w-full rounded-xl border px-3.5 py-3 text-left transition-colors",
                         isSelected
                           ? "border-primary/60 bg-primary/10"
                           : "border-border/70 bg-background/35 hover:bg-secondary/45",
@@ -642,7 +832,12 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
 
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", getRoleChipClass(primaryRole))}>
-                          主要角色：{ROLE_LABEL[primaryRole]}
+                          主要：{ROLE_LABEL[primaryRole]}
+                        </span>
+                        <span
+                          className={cn("rounded-full border px-2 py-0.5 text-[11px]", getMembershipChipClass(user.membershipTier))}
+                        >
+                          等級：{MEMBERSHIP_LABEL[user.membershipTier]}
                         </span>
                         {orderedRoles(user.roles).map((role) => (
                           <span key={`${user.id}-${role}`} className="rounded-full border border-border/70 px-2 py-0.5 text-[11px]">
@@ -655,11 +850,11 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                 })
               )}
             </div>
-            <div className="rounded-xl border border-border/70 bg-background/35 p-4">
+            <div className="rounded-xl border border-border/70 bg-background/35 p-3.5">
               {!selectedUser ? (
                 <p className="text-sm text-muted-foreground">請先選取左側會員以編輯設定。</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <p className="text-lg font-medium">{selectedUser.name}</p>
                     <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
@@ -668,7 +863,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
 
                   {selectedIsProtected ? (
                     <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-200">
-                      這是最高管理者帳號。你目前權限不足，無法修改其狀態與角色。
+                      這是最高管理者帳號。你目前權限不足，無法修改其資料。
                     </p>
                   ) : null}
 
@@ -693,6 +888,27 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                       </span>
                       <Button size="sm" variant="outline" onClick={() => void onToggleUserActive()} disabled={statusToggleDisabled}>
                         {isSavingStatus ? "處理中" : selectedUser.isActive ? "停用帳號" : "啟用帳號"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">會員等級</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <select
+                        value={draftTier}
+                        onChange={(event) => setDraftTier(event.target.value as MembershipTier)}
+                        className="h-9 w-full rounded-md border border-border/70 bg-background/70 px-2 text-sm outline-none"
+                        disabled={selectedIsProtected}
+                      >
+                        {MEMBERSHIP_TIERS.map((tier) => (
+                          <option key={tier} value={tier}>
+                            {MEMBERSHIP_LABEL[tier]}
+                          </option>
+                        ))}
+                      </select>
+                      <Button size="sm" onClick={() => void onSaveMembership()} disabled={tierSaveDisabled}>
+                        {isSavingTier ? "儲存中" : "儲存等級"}
                       </Button>
                     </div>
                   </div>
@@ -786,6 +1002,47 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                     </div>
                   </div>
 
+                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">管理員重設密碼</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <Input
+                        value={resetPassword}
+                        onChange={(event) => setResetPassword(event.target.value)}
+                        type="password"
+                        placeholder="輸入新密碼（至少 8 碼）"
+                        disabled={selectedIsProtected}
+                      />
+                      <Button size="sm" onClick={() => void onResetPassword()} disabled={resetPasswordDisabled}>
+                        {isResettingPassword ? "重設中" : "重設密碼"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedIsSelf ? (
+                    <div className="rounded-xl border border-border/70 bg-background/55 p-3">
+                      <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">變更自己的密碼</p>
+                      <div className="mt-2 grid gap-2">
+                        <Input
+                          value={selfCurrentPassword}
+                          onChange={(event) => setSelfCurrentPassword(event.target.value)}
+                          type="password"
+                          placeholder="目前密碼"
+                        />
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                          <Input
+                            value={selfNewPassword}
+                            onChange={(event) => setSelfNewPassword(event.target.value)}
+                            type="password"
+                            placeholder="新密碼（至少 8 碼）"
+                          />
+                          <Button size="sm" onClick={() => void onChangeOwnPassword()} disabled={changeOwnPasswordDisabled}>
+                            {isChangingOwnPassword ? "更新中" : "更新我的密碼"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
                   {draftRoles.length === 0 ? (
                     <p className="inline-flex items-center gap-1 text-xs text-destructive">
                       <AlertTriangle className="size-3.5" />
@@ -811,12 +1068,12 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
           </div>
         </PremiumCard>
 
-        <div className="grid gap-6">
-          <PremiumCard className="space-y-4">
+        <div className="grid gap-4">
+          <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-xs tracking-[0.24em] text-primary uppercase">角色階層</p>
-                <h2 className="mt-2 text-2xl">權限分級</h2>
+                <h2 className="mt-1.5 text-2xl">權限分級</h2>
               </div>
               <LockKeyhole className="size-5 text-primary" />
             </div>
@@ -838,11 +1095,11 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
             </div>
           </PremiumCard>
 
-          <PremiumCard className="space-y-4">
+          <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-xs tracking-[0.24em] text-primary uppercase">專案狀態</p>
-                <h2 className="mt-2 text-2xl">流程分布</h2>
+                <h2 className="mt-1.5 text-2xl">流程分布</h2>
               </div>
               <ShieldCheck className="size-5 text-primary" />
             </div>
@@ -869,16 +1126,16 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
             </div>
           </PremiumCard>
 
-          <PremiumCard className="space-y-4">
+          <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-xs tracking-[0.24em] text-primary uppercase">稽核紀錄</p>
-                <h2 className="mt-2 text-2xl">最近 200 筆</h2>
+                <h2 className="mt-1.5 text-2xl">最近 200 筆</h2>
               </div>
               <Activity className="size-5 text-primary" />
             </div>
 
-            <div className="max-h-[24rem] overflow-y-auto rounded-xl border border-border/70 bg-background/35">
+            <div className="max-h-[21rem] overflow-y-auto rounded-xl border border-border/70 bg-background/35">
               {isInitialLoading ? (
                 <p className="p-4 text-sm text-muted-foreground">讀取中...</p>
               ) : logs.length === 0 ? (
@@ -905,7 +1162,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <PremiumCard className="space-y-1">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle2 className="size-4 text-emerald-600" />
@@ -919,6 +1176,27 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
             停用會員
           </div>
           <p className="text-2xl">{userSummary.inactive}</p>
+        </PremiumCard>
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <UserCog className="size-4 text-zinc-700" />
+            Basic
+          </div>
+          <p className="text-2xl">{userSummary.basic}</p>
+        </PremiumCard>
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <UserCog className="size-4 text-indigo-600" />
+            Pro
+          </div>
+          <p className="text-2xl">{userSummary.pro}</p>
+        </PremiumCard>
+        <PremiumCard className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <UserCog className="size-4 text-fuchsia-600" />
+            Ultra
+          </div>
+          <p className="text-2xl">{userSummary.ultra}</p>
         </PremiumCard>
         <PremiumCard className="space-y-1">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

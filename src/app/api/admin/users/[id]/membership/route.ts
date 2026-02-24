@@ -2,13 +2,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRoles, requireSession } from "@/lib/auth/request";
-import { ROLE_KEYS } from "@/lib/auth/constants";
-import { ensureBaseRoles } from "@/lib/auth/roles";
+import {
+  ensureMembershipRoles,
+  MEMBERSHIP_ROLE_KEYS,
+  MEMBERSHIP_TIERS,
+  getMembershipRoleKey,
+} from "@/lib/auth/membership";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
-const patchRolesSchema = z.object({
-  roles: z.array(z.enum(ROLE_KEYS)).min(1, "每個帳號至少要保留一個角色。"),
+const patchMembershipSchema = z.object({
+  tier: z.enum(MEMBERSHIP_TIERS),
 });
 
 export const runtime = "nodejs";
@@ -37,8 +41,8 @@ export async function PATCH(req: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const body = patchRolesSchema.parse(await req.json());
-    await ensureBaseRoles(prisma);
+    const body = patchMembershipSchema.parse(await req.json());
+    await ensureMembershipRoles(prisma);
 
     const target = await prisma.user.findUnique({
       where: { id },
@@ -62,34 +66,20 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     const actorIsSuperAdmin = session.roles.includes("super_admin");
     const targetRoleKeys = target.roles.map((item) => item.role.key);
-    const targetIsSuperAdmin = targetRoleKeys.includes("super_admin");
-    const updateIncludesSuperAdmin = body.roles.includes("super_admin");
-
-    if (!actorIsSuperAdmin && (targetIsSuperAdmin || updateIncludesSuperAdmin)) {
+    if (!actorIsSuperAdmin && targetRoleKeys.includes("super_admin")) {
       return NextResponse.json(
-        { ok: false, message: "只有最高管理者可以管理最高管理者角色。" },
+        { ok: false, message: "只有最高管理者可以調整最高管理者帳號。" },
         { status: 403 },
       );
     }
 
-    if (id === session.userId && !body.roles.some((role) => role === "admin" || role === "super_admin")) {
-      return NextResponse.json(
-        { ok: false, message: "不能移除自己所有後台管理權限。" },
-        { status: 400 },
-      );
-    }
-
-    const roleRows = await prisma.role.findMany({
-      where: {
-        key: {
-          in: body.roles,
-        },
-      },
-      select: { id: true, key: true },
+    const roleKey = getMembershipRoleKey(body.tier);
+    const tierRole = await prisma.role.findUnique({
+      where: { key: roleKey },
+      select: { id: true },
     });
-
-    if (roleRows.length !== body.roles.length) {
-      return NextResponse.json({ ok: false, message: "角色資料不合法。" }, { status: 400 });
+    if (!tierRole) {
+      return NextResponse.json({ ok: false, message: "會員等級設定失敗。" }, { status: 500 });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -98,38 +88,37 @@ export async function PATCH(req: Request, context: RouteContext) {
           userId: id,
           role: {
             key: {
-              in: [...ROLE_KEYS],
+              in: [...MEMBERSHIP_ROLE_KEYS],
             },
           },
         },
       });
 
-      await tx.userRole.createMany({
-        data: roleRows.map((role) => ({
+      await tx.userRole.create({
+        data: {
           userId: id,
-          roleId: role.id,
-        })),
+          roleId: tierRole.id,
+        },
       });
     });
 
     await createAuditLog({
       actorUserId: session.userId,
-      action: "admin.user.roles.update",
+      action: "admin.user.membership.update",
       resourceType: "user",
       resourceId: id,
-      payload: { roles: body.roles },
+      payload: { tier: body.tier },
       ip: getClientIpFromRequest(req),
     });
 
-    return NextResponse.json({ ok: true, userId: id, roles: body.roles });
+    return NextResponse.json({ ok: true, userId: id, tier: body.tier });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { ok: false, message: error.issues[0]?.message ?? "角色資料格式錯誤。" },
+        { ok: false, message: error.issues[0]?.message ?? "會員等級資料格式錯誤。" },
         { status: 400 },
       );
     }
-
-    return NextResponse.json({ ok: false, message: "更新角色失敗。" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "更新會員等級失敗。" }, { status: 500 });
   }
 }
