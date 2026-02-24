@@ -18,8 +18,8 @@ const config: Config = {
         slate: "#404040", // Muted elements
       },
       fontFamily: {
-        serif: ["var(--font-cinzel)", "serif"],
-        sans: ["var(--font-manrope)", "sans-serif"],
+        serif: ["var(--font-playfair)", "serif"],
+        sans: ["var(--font-inter)", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
