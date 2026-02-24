@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/request";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { passwordPolicySchema } from "@/lib/auth/password-policy";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "請輸入目前密碼。"),
-    newPassword: z.string().min(8, "新密碼至少 8 碼。"),
+    newPassword: passwordPolicySchema,
   })
   .refine((value) => value.currentPassword !== value.newPassword, {
     message: "新密碼不可與目前密碼相同。",

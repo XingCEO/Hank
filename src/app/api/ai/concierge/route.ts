@@ -59,6 +59,14 @@ const GENERIC_LINKS: SuggestionLink[] = [
   { label: "聯絡我們", href: "/contact" },
 ];
 
+const PROMPT_INJECTION_PATTERNS: RegExp[] = [
+  /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts?)/i,
+  /(reveal|show|print|dump)\s+.*(system|developer|hidden)\s*(prompt|message|instruction)/i,
+  /(jailbreak|dan mode|developer mode|god mode)/i,
+  /(bypass|override)\s+(safety|guardrails?|policy|policies)/i,
+  /(api[\s_-]?key|token|password|secret|database url|connection string)/i,
+];
+
 const KNOWLEDGE_BASE: Array<{
   keywords: string[];
   answer: ConciergeAnswer;
@@ -236,6 +244,31 @@ function pickKnowledgeMatch(message: string): KnowledgeMatch {
 
 function normalizeReply(reply: string): string {
   return reply.replace(/\n{3,}/g, "\n\n").trim().slice(0, 1800);
+}
+
+function getRateLimitFingerprint(req: Request, ip: string): string {
+  const userAgent = (req.headers.get("user-agent") ?? "unknown")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+  return `${ip}:${userAgent}`;
+}
+
+function looksLikePromptInjection(message: string): boolean {
+  const normalized = message.trim();
+  if (!normalized) {
+    return false;
+  }
+
+  let hitCount = 0;
+  for (const pattern of PROMPT_INJECTION_PATTERNS) {
+    if (pattern.test(normalized)) {
+      hitCount += 1;
+    }
+  }
+
+  return hitCount >= 2;
 }
 
 async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs: number): Promise<Response> {
@@ -433,8 +466,9 @@ export async function POST(req: Request) {
   }
 
   const ip = getClientIpFromRequest(req) ?? "unknown";
+  const fingerprint = getRateLimitFingerprint(req, ip);
   const rateLimit = consumeRateLimit({
-    key: `ai:concierge:${ip}`,
+    key: `ai:concierge:${fingerprint}`,
     limit: 30,
     windowMs: 10 * 60 * 1000,
   });
@@ -445,9 +479,41 @@ export async function POST(req: Request) {
     );
   }
 
+  const burstRateLimit = consumeRateLimit({
+    key: `ai:concierge:burst:${fingerprint}`,
+    limit: 8,
+    windowMs: 60 * 1000,
+  });
+  if (!burstRateLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, message: "提問太密集，請稍後約一分鐘再試。" },
+      { status: 429 },
+    );
+  }
+
   try {
     const body = askSchema.parse(await req.json());
     const knowledgeMatch = pickKnowledgeMatch(body.message);
+    if (looksLikePromptInjection(body.message)) {
+      return NextResponse.json({
+        ok: true,
+        reply:
+          "這則訊息包含疑似越權控制或機密索取指令，我無法協助。請改成具體需求，例如：登入流程、後台操作、程式問題排查。",
+        links: [
+          { label: "前往會員登入", href: "/auth" },
+          { label: "聯絡我們", href: "/contact" },
+        ],
+      });
+    }
+
+    if (knowledgeMatch.score >= 5) {
+      return NextResponse.json({
+        ok: true,
+        reply: knowledgeMatch.answer.reply,
+        links: knowledgeMatch.answer.links ?? [],
+      });
+    }
+
     const aiReply = await generateClaudeReply(body.message);
     const reply = aiReply ?? knowledgeMatch.answer.reply;
     const links = knowledgeMatch.score >= 3 ? (knowledgeMatch.answer.links ?? []) : aiReply ? [] : GENERIC_LINKS;

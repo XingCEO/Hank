@@ -36,6 +36,13 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/photographer` photographer workspace
 - `/admin` admin dashboard
 
+## Security Notes
+- Password policy is enforced server-side for register, self-service change, admin reset, and super-admin bootstrap:
+  - 12-128 chars
+  - at least one uppercase, one lowercase, one number, one special symbol
+  - no whitespace
+- `/api/ai/concierge` includes same-origin checks, dual rate limits, and prompt-injection pattern blocking before model calls.
+
 ## AI Concierge (Claude)
 Configure these env vars on Zeabur (or `.env`) to enable real model replies:
 

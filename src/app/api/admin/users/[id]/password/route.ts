@@ -3,11 +3,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRoles, requireSession } from "@/lib/auth/request";
 import { hashPassword } from "@/lib/auth/password";
+import { passwordPolicySchema } from "@/lib/auth/password-policy";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const patchPasswordSchema = z.object({
-  newPassword: z.string().min(8, "新密碼至少 8 碼。"),
+  newPassword: passwordPolicySchema,
 });
 
 export const runtime = "nodejs";

@@ -52,15 +52,44 @@ const email = (process.env.BOOTSTRAP_ADMIN_EMAIL ?? "owner@studio.local").trim()
 const name = (process.env.BOOTSTRAP_ADMIN_NAME ?? "Studio Owner").trim();
 
 const providedPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD?.trim();
-const password = providedPassword && providedPassword.length > 0 ? providedPassword : `Admin!${randomBytes(9).toString("base64url")}`;
+const password =
+  providedPassword && providedPassword.length > 0
+    ? providedPassword
+    : `Admin1!${randomBytes(9).toString("base64url")}`;
 
 if (!email || !email.includes("@")) {
   console.error("Invalid BOOTSTRAP_ADMIN_EMAIL.");
   process.exit(1);
 }
 
-if (password.length < 8) {
-  console.error("BOOTSTRAP_ADMIN_PASSWORD must be at least 8 characters.");
+function validatePasswordPolicy(rawPassword) {
+  if (rawPassword.length < 12) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must be at least 12 characters.";
+  }
+  if (rawPassword.length > 128) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must be at most 128 characters.";
+  }
+  if (!/[a-z]/.test(rawPassword)) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must include at least one lowercase letter.";
+  }
+  if (!/[A-Z]/.test(rawPassword)) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must include at least one uppercase letter.";
+  }
+  if (!/\d/.test(rawPassword)) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must include at least one number.";
+  }
+  if (!/[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?`~]/.test(rawPassword)) {
+    return "BOOTSTRAP_ADMIN_PASSWORD must include at least one special character.";
+  }
+  if (/\s/.test(rawPassword)) {
+    return "BOOTSTRAP_ADMIN_PASSWORD cannot contain whitespace.";
+  }
+  return null;
+}
+
+const passwordPolicyError = validatePasswordPolicy(password);
+if (passwordPolicyError) {
+  console.error(passwordPolicyError);
   process.exit(1);
 }
 
