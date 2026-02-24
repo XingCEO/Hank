@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
-import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { serviceCards } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +45,9 @@ export default function ServicesPage() {
     <PageShell path="/services">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <AmbientBackground />
+
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="服務矩陣"
               title="為策略價值而生的製作服務"
               copy="每項服務皆涵蓋企劃、執行、後期製作與部署級交付，讓成果不只好看，也能直接推進你的商業目標。"
@@ -64,10 +64,10 @@ export default function ServicesPage() {
                   height={1200}
                   className="h-[320px] w-full object-cover md:h-[380px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-5 bottom-5 left-5">
-                  <p className="text-xs tracking-[0.24em] text-primary uppercase">Service Architecture</p>
-                  <p className="mt-2 text-sm text-foreground/90 md:text-base">
+                  <p className="text-xs tracking-[0.24em] text-white/80 uppercase">Service Architecture</p>
+                  <p className="mt-2 text-sm text-white md:text-base">
                     以策略、製作與交付整合為核心，建立可持續複製的影像生產系統。
                   </p>
                 </div>
@@ -80,7 +80,7 @@ export default function ServicesPage() {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <div className="mb-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
           <StaggerReveal className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {serviceCards.map((card) => (

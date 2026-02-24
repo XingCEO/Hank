@@ -36,7 +36,7 @@ export async function GET() {
       totalProjects,
       totalAssets,
       totalDeliveries,
-      projectStatusBreakdown: statusGroups.map((item) => ({
+      projectStatusBreakdown: statusGroups.map((item: { status: string; _count: { status: number } }) => ({
         status: item.status,
         count: item._count.status,
       })),

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { Reveal } from "@/components/ultra/reveal";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
 export const metadata: Metadata = {
   title: "素材包",
@@ -44,14 +44,14 @@ export default function MaterialsPage() {
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="素材包"
               title="可直接使用的品牌與社群素材模板"
               copy="你可以下載這些模板快速做提案、貼文封面與案例視覺。所有檔案皆為可編輯 SVG。"
             />
           </Reveal>
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
         </div>
       </SectionShell>
@@ -76,7 +76,7 @@ export default function MaterialsPage() {
                   <Link
                     href={item.file}
                     download
-                    className="focus-luxury inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-5 py-2 text-xs font-medium tracking-[0.14em] text-primary-foreground uppercase transition-colors hover:border-primary hover:bg-primary/90"
+                    className="focus-ring inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-5 py-2 text-xs font-medium tracking-[0.14em] text-primary-foreground uppercase transition-colors hover:border-primary hover:bg-primary/90"
                   >
                     下載素材
                   </Link>

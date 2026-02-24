@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal, StaggerReveal } from "@/components/ultra/reveal";
-import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -59,9 +59,9 @@ export default function PricingPage() {
     <PageShell path="/pricing">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <AmbientBackground />
+
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="價格架構"
               title="頂級品質、明確範疇、可預期的交付"
               copy="以下為公開參考範圍，最終報價會依製作複雜度、時程與授權範圍做精準調整。"
@@ -78,10 +78,10 @@ export default function PricingPage() {
                   height={1200}
                   className="h-[320px] w-full object-cover md:h-[380px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-5 bottom-5 left-5">
-                  <p className="text-xs tracking-[0.24em] text-primary uppercase">Pricing Framework</p>
-                  <p className="mt-2 text-sm text-foreground/90 md:text-base">
+                  <p className="text-xs tracking-[0.24em] text-white/80 uppercase">Pricing Framework</p>
+                  <p className="mt-2 text-sm text-white md:text-base">
                     你會先看到透明基準，再拿到符合專案條件的正式報價。
                   </p>
                 </div>
@@ -94,17 +94,17 @@ export default function PricingPage() {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <div className="mb-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
           <StaggerReveal className="grid gap-5 md:grid-cols-3">
             {tiers.map((tier) => (
               <PremiumCard
                 key={tier.name}
-                className={tier.featured ? "border-primary/50 shadow-[var(--shadow-gold)]" : ""}
+                className={tier.featured ? "border-primary/50 shadow-[var(--shadow-accent)]" : ""}
               >
                 <p className="text-xs tracking-[0.22em] text-primary uppercase">{tier.featured ? "最多客戶選擇" : "方案"}</p>
                 <h3 className="mt-3 text-2xl">{tier.name}</h3>
-                <p className="mt-2 text-3xl gold-text">{tier.price}</p>
+                <p className="mt-2 text-3xl accent-text">{tier.price}</p>
                 <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
                   {tier.points.map((point) => (
                     <li key={point} className="flex gap-2">

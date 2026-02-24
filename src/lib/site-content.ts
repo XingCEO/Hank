@@ -25,7 +25,7 @@ export const siteName = "Studio Pro";
 export const navItems: NavItem[] = [
   { href: "/", label: "首頁" },
   { href: "/portfolio", label: "作品集" },
-  { href: "/booking", label: "預約" },
+  { href: "/services", label: "服務" },
   { href: "/materials", label: "素材包" },
   { href: "/auth", label: "會員" },
 ];

@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { SafeImage } from "@/components/ui/safe-image";
 import { MagneticButton } from "@/components/ultra/magnetic-button";
 import { Reveal } from "@/components/ultra/reveal";
-import { AmbientBackground, GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { systemRows } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +33,9 @@ export default function SystemsPage() {
     <PageShell path="/systems">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra relative grid items-end gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <AmbientBackground />
+
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="工作室營運堆疊"
               title="從諮詢到交付，每個階段皆精準量化"
               copy="這不只是作品展示，而是一套具備可量測產出、轉換率與交付品質的營運系統。"
@@ -52,9 +52,9 @@ export default function SystemsPage() {
                   height={1200}
                   className="h-[320px] w-full object-cover md:h-[380px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-5 bottom-5 left-5">
-                  <p className="text-xs tracking-[0.24em] text-primary uppercase">Operation Stack</p>
+                  <p className="text-xs tracking-[0.24em] text-white/80 uppercase">Operation Stack</p>
                   <p className="mt-2 text-sm text-foreground/90 md:text-base">
                     每個模組皆有負責角色、執行節點與 KPI，確保長期穩定成長。
                   </p>
@@ -68,7 +68,7 @@ export default function SystemsPage() {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <div className="mb-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
           <Reveal>
             <PremiumCard>

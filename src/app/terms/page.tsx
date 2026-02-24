@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 
 export const metadata: Metadata = {
   title: "服務條款",
@@ -31,13 +31,13 @@ export default function TermsPage() {
     <PageShell path="/terms">
       <SectionShell className="pt-[var(--space-top-offset)]">
         <div className="container-ultra">
-          <LuxuryHeading
+          <SectionHeading
             kicker="法律資訊"
             title="服務條款"
             copy="使用本網站與相關預約服務前，請先閱讀以下條款。"
           />
           <div className="mt-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
         </div>
       </SectionShell>

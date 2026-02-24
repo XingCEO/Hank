@@ -11,15 +11,6 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        obsidian: "#0a0a0a", // Primary dark background
-        charcoal: "#1a1a1a", // Secondary dark background
-        gold: "#D4AF37", // Luxury accent
-        pearl: "#e5e5e5", // Soft white text
-        slate: "#404040", // Muted elements
-      },
-      fontFamily: {
-        serif: ["var(--font-playfair)", "serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

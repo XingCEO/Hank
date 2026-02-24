@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type CreateAuditLogParams = {
@@ -6,7 +5,7 @@ type CreateAuditLogParams = {
   action: string;
   resourceType: string;
   resourceId?: string;
-  payload?: Prisma.InputJsonValue;
+  payload?: Record<string, unknown> | string | number | boolean;
   ip?: string;
 };
 
@@ -25,7 +24,7 @@ export async function createAuditLog({
         action,
         resourceType,
         resourceId,
-        payloadJson: payload,
+        payloadJson: payload as never,
         ip,
       },
     });

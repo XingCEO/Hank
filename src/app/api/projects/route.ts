@@ -143,12 +143,12 @@ export async function POST(req: Request) {
 
         project = created;
         break;
-      } catch (error) {
+      } catch (error: unknown) {
+        const prismaError = error as { code?: string; meta?: { target?: string[] } };
         if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === "P2002" &&
-          Array.isArray(error.meta?.target) &&
-          error.meta?.target.includes("code")
+          prismaError.code === "P2002" &&
+          Array.isArray(prismaError.meta?.target) &&
+          prismaError.meta?.target.includes("code")
         ) {
           continue;
         }

@@ -39,7 +39,7 @@ function FooterLinkList({ title, links }: { title: string; links: FooterLink[] }
               href={link.href}
               target={link.external ? "_blank" : undefined}
               rel={link.external ? "noreferrer noopener" : undefined}
-              className="focus-luxury hover:text-foreground"
+              className="focus-ring hover:text-foreground"
             >
               {link.label}
             </Link>
@@ -57,9 +57,9 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border/70 bg-card/20 py-[var(--space-phi-4)]">
       <div className="container-ultra">
-        <div className="grid gap-[var(--space-phi-3)] xl:grid-cols-[1.3fr_1fr_1fr_1fr]">
-          <div>
-            <p className="gold-text text-2xl tracking-[0.18em] uppercase">{siteName}</p>
+        <div className="grid gap-[var(--space-phi-3)] sm:grid-cols-2 xl:grid-cols-[1.3fr_1fr_1fr_1fr_1fr]">
+          <div className="sm:col-span-2 xl:col-span-1">
+            <p className="accent-text text-2xl tracking-[0.18em] uppercase">{siteName}</p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
               專注婚禮、品牌與人物影像製作，提供從企劃、拍攝到交付的完整商業流程。若你需要高品質且可直接落地使用的視覺成果，我們可提供完整顧問式合作。
             </p>
@@ -70,11 +70,11 @@ export function SiteFooter() {
               <p>統一編號：90476123</p>
             </div>
             <div className="mt-5 text-sm text-muted-foreground">
-              <Link className="focus-luxury hover:text-foreground" href="mailto:hello@studiopro.tw">
+              <Link className="focus-ring hover:text-foreground" href="mailto:hello@studiopro.tw">
                 hello@studiopro.tw
               </Link>
               <span className="mx-2">·</span>
-              <Link className="focus-luxury hover:text-foreground" href="tel:+886912345678">
+              <Link className="focus-ring hover:text-foreground" href="tel:+886912345678">
                 +886 912 345 678
               </Link>
             </div>
@@ -82,7 +82,8 @@ export function SiteFooter() {
 
           <FooterLinkList title="快速導覽" links={[{ href: "/", label: "首頁" }, ...primaryNavLinks]} />
           <FooterLinkList title="服務與方案" links={serviceLinks} />
-          <FooterLinkList title="支援與社群" links={[...supportLinks, ...socialLinks]} />
+          <FooterLinkList title="支援資源" links={supportLinks} />
+          <FooterLinkList title="社群媒體" links={socialLinks} />
         </div>
 
         <div className="mt-[var(--space-phi-3)] grid gap-4 rounded-2xl border border-border/70 bg-background/25 p-5 md:grid-cols-3">
@@ -103,10 +104,10 @@ export function SiteFooter() {
         <div className="mt-6 flex flex-col gap-3 border-t border-border/60 pt-5 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>© {year} {siteName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <Link href="/terms" className="focus-luxury hover:text-foreground">
+            <Link href="/terms" className="focus-ring hover:text-foreground">
               服務條款
             </Link>
-            <Link href="/privacy" className="focus-luxury hover:text-foreground">
+            <Link href="/privacy" className="focus-ring hover:text-foreground">
               隱私權政策
             </Link>
           </div>

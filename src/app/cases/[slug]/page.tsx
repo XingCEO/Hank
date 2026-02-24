@@ -4,7 +4,7 @@ import { PageShell } from "@/components/page-shell";
 import { CaseGalleryLightbox } from "@/components/cases/case-gallery-lightbox";
 import { SafeImage } from "@/components/ui/safe-image";
 import { Reveal } from "@/components/ultra/reveal";
-import { GoldDivider, LuxuryHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
+import { AccentDivider, SectionHeading, PremiumCard, SectionShell } from "@/components/ultra/section";
 import { caseStudies } from "@/lib/site-content";
 
 type CasePageProps = {
@@ -60,10 +60,10 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
                   priority
                   className="h-[44vh] min-h-[320px] w-full object-cover md:h-[56vh]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/78 via-background/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-6 bottom-6 left-6 md:right-8 md:bottom-8 md:left-8">
-                  <p className="text-xs tracking-[0.26em] text-primary uppercase">{item.category}</p>
-                  <p className="mt-2 max-w-2xl text-sm text-foreground/90 md:text-base">{item.summary}</p>
+                  <p className="text-xs tracking-[0.26em] text-white uppercase">{item.category}</p>
+                  <p className="mt-2 max-w-2xl text-sm text-white/90 md:text-base">{item.summary}</p>
                 </div>
               </div>
             </div>
@@ -108,14 +108,14 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
       <SectionShell className="pt-0">
         <div className="container-ultra">
           <Reveal>
-            <LuxuryHeading
+            <SectionHeading
               kicker="圖庫"
               title={`${item.name} 精選畫面`}
               copy="完整調色與跨平台裁切版本可於交付入口中查看。"
             />
           </Reveal>
           <div className="my-8">
-            <GoldDivider />
+            <AccentDivider />
           </div>
           <CaseGalleryLightbox images={item.gallery} title={item.name} />
         </div>
