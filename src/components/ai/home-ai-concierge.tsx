@@ -23,7 +23,8 @@ type ConciergeResponse = {
 
 const QUICK_ASKS = ["價格怎麼算？", "如何預約拍攝？", "我要登入會員", "如何進入管理後台？"];
 const DUPLICATE_SEND_WINDOW_MS = 1200;
-const TYPE_INTERVAL_MS = 20;
+const TYPE_INTERVAL_MS = 12;
+const TARGET_TYPING_TICKS = 70;
 const AUTO_STICK_THRESHOLD_PX = 32;
 
 function cleanAssistantReply(raw: string): string {
@@ -89,6 +90,8 @@ export function HomeAiConcierge() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -103,6 +106,7 @@ export function HomeAiConcierge() {
   const lastSubmittedRef = useRef<{ text: string; at: number } | null>(null);
   const typingAbortRef = useRef<AbortController | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending]);
 
@@ -116,8 +120,22 @@ export function HomeAiConcierge() {
     if (open) {
       shouldStickToBottomRef.current = true;
       scrollChatToBottom("auto", true);
+      if (!sending) {
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
+      }
     }
-  }, [open]);
+  }, [open, sending]);
+
+  useEffect(() => {
+    if (!open || sending) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  }, [sending, open]);
 
   useEffect(() => {
     if (!open) {
@@ -157,14 +175,18 @@ export function HomeAiConcierge() {
     const controller = new AbortController();
     typingAbortRef.current?.abort();
     typingAbortRef.current = controller;
+    setTypingMessageId(messageId);
 
     setMessages((current) => [...current, { id: messageId, role: "assistant", content: "", links: [] }]);
 
     const chars = Array.from(content);
-    const step = chars.length > 900 ? 12 : chars.length > 500 ? 8 : chars.length > 220 ? 5 : 3;
+    const step = Math.max(4, Math.ceil(chars.length / TARGET_TYPING_TICKS));
 
     for (let i = step; i <= chars.length; i += step) {
       if (controller.signal.aborted) {
+        if (typingAbortRef.current === controller) {
+          setTypingMessageId(null);
+        }
         return;
       }
 
@@ -176,6 +198,9 @@ export function HomeAiConcierge() {
     }
 
     if (controller.signal.aborted) {
+      if (typingAbortRef.current === controller) {
+        setTypingMessageId(null);
+      }
       return;
     }
 
@@ -188,6 +213,7 @@ export function HomeAiConcierge() {
     if (typingAbortRef.current === controller) {
       typingAbortRef.current = null;
     }
+    setTypingMessageId(null);
   }
 
   async function ask(text: string) {
@@ -213,6 +239,7 @@ export function HomeAiConcierge() {
     setMessages((current) => [...current, userMessage]);
     setInput("");
     setSending(true);
+    setThinking(true);
 
     try {
       const response = await fetch("/api/ai/concierge", {
@@ -226,12 +253,15 @@ export function HomeAiConcierge() {
         throw new Error(payload.message ?? "AI 客服暫時無法回應。");
       }
 
+      setThinking(false);
       await appendAssistantMessageWithTyping(payload.reply, payload.links ?? []);
     } catch (error) {
+      setThinking(false);
       await appendAssistantMessageWithTyping(
         error instanceof Error ? error.message : "AI 客服暫時無法回應。",
       );
     } finally {
+      setThinking(false);
       inFlightRef.current = false;
       setSending(false);
     }
@@ -290,7 +320,12 @@ export function HomeAiConcierge() {
                   : "ml-8 border-primary/30 bg-primary/10",
               )}
             >
-              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">
+                {msg.content}
+                {msg.id === typingMessageId ? (
+                  <span className="ml-1 inline-block h-4 w-[2px] animate-pulse bg-foreground/70 align-middle" />
+                ) : null}
+              </p>
               {msg.links && msg.links.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {msg.links.map((link) => (
@@ -307,6 +342,18 @@ export function HomeAiConcierge() {
               ) : null}
             </article>
           ))}
+          {thinking ? (
+            <article className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span>AI 正在整理回覆</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current" />
+                </span>
+              </div>
+            </article>
+          ) : null}
         </div>
 
         <div className="border-t border-border/70 px-3 py-3">
@@ -332,6 +379,7 @@ export function HomeAiConcierge() {
             className="flex items-center gap-2"
           >
             <Input
+              ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
               placeholder="輸入你的問題..."
