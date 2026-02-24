@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
-import { AUTH_COOKIE_NAME, ROLE_KEYS, SESSION_TTL_SECONDS, type RoleKey } from "@/lib/auth/constants";
+import { AUTH_COOKIE_NAME, SESSION_TTL_SECONDS, type RoleKey } from "@/lib/auth/constants";
+import { prisma } from "@/lib/prisma";
+import { normalizeRoleKeys } from "@/lib/auth/normalize";
 
 export type AuthSession = {
   userId: string;
@@ -13,6 +15,10 @@ type SessionPayload = {
   email: string;
   name: string;
   roles: RoleKey[];
+};
+
+type VerifiedToken = {
+  userId: string;
 };
 
 type CookieReader = {
@@ -44,22 +50,15 @@ export async function createSessionToken(session: AuthSession): Promise<string> 
     .sign(getJwtSecret());
 }
 
-export async function verifySessionToken(token: string): Promise<AuthSession | null> {
+export async function verifySessionToken(token: string): Promise<VerifiedToken | null> {
   try {
     const { payload } = await jwtVerify(token, getJwtSecret());
-    const roles = Array.isArray(payload.roles)
-      ? payload.roles.filter((value): value is RoleKey => typeof value === "string" && ROLE_KEYS.includes(value as RoleKey))
-      : [];
-
-    if (!payload.sub || typeof payload.email !== "string" || typeof payload.name !== "string" || roles.length === 0) {
+    if (typeof payload.sub !== "string" || payload.sub.length === 0) {
       return null;
     }
 
     return {
       userId: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      roles,
     };
   } catch {
     return null;
@@ -73,7 +72,45 @@ export async function getSessionFromCookies(cookieStore: CookieReader): Promise<
     return null;
   }
 
-  return verifySessionToken(token);
+  const verified = await verifySessionToken(token);
+  if (!verified) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: verified.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      isActive: true,
+      roles: {
+        include: {
+          role: {
+            select: {
+              key: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user || !user.isActive) {
+    return null;
+  }
+
+  const roles = normalizeRoleKeys(user.roles.map((item) => item.role.key));
+  if (roles.length === 0) {
+    return null;
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    roles,
+  };
 }
 
 export function getSessionCookieOptions() {

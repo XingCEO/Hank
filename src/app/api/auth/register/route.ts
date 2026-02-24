@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -82,6 +83,9 @@ export async function POST(req: Request) {
       name: user.name,
       roles: normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key)),
     };
+    if (session.roles.length === 0) {
+      return NextResponse.json({ ok: false, message: "Role assignment failed." }, { status: 500 });
+    }
 
     const token = await createSessionToken(session);
     const response = NextResponse.json({
@@ -112,6 +116,9 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid registration payload." }, { status: 400 });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ ok: false, message: "Email already registered." }, { status: 409 });
     }
     return NextResponse.json({ ok: false, message: "Registration failed." }, { status: 500 });
   }

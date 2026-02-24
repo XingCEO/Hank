@@ -34,6 +34,10 @@ export async function POST(req: Request) {
   try {
     const body = loginSchema.parse(await req.json());
     const email = body.email.toLowerCase().trim();
+    const invalidCredentialsResponse = NextResponse.json(
+      { ok: false, message: "Invalid email or password." },
+      { status: 401 },
+    );
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -47,22 +51,27 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.passwordHash) {
-      return NextResponse.json({ ok: false, message: "Invalid email or password." }, { status: 401 });
-    }
-    if (!user.isActive) {
-      return NextResponse.json({ ok: false, message: "Account is disabled." }, { status: 403 });
+      return invalidCredentialsResponse;
     }
 
     const valid = await verifyPassword(body.password, user.passwordHash);
     if (!valid) {
-      return NextResponse.json({ ok: false, message: "Invalid email or password." }, { status: 401 });
+      return invalidCredentialsResponse;
+    }
+    if (!user.isActive) {
+      return invalidCredentialsResponse;
+    }
+
+    const roles = normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key));
+    if (roles.length === 0) {
+      return NextResponse.json({ ok: false, message: "Account has no valid roles." }, { status: 403 });
     }
 
     const session = {
       userId: user.id,
       email: user.email,
       name: user.name,
-      roles: normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key)),
+      roles,
     };
 
     const token = await createSessionToken(session);

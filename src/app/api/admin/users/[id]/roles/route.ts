@@ -42,10 +42,28 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     const target = await prisma.user.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
     if (!target) {
       return NextResponse.json({ ok: false, message: "Target user not found." }, { status: 404 });
+    }
+
+    const actorIsSuperAdmin = session.roles.includes("super_admin");
+    const targetRoleKeys = target.roles.map((item) => item.role.key);
+    const targetIsSuperAdmin = targetRoleKeys.includes("super_admin");
+    const updateIncludesSuperAdmin = body.roles.includes("super_admin");
+    if (!actorIsSuperAdmin && (targetIsSuperAdmin || updateIncludesSuperAdmin)) {
+      return NextResponse.json(
+        { ok: false, message: "Only super admins can manage super admin roles." },
+        { status: 403 },
+      );
     }
 
     const roleRows = await prisma.role.findMany({
