@@ -32,15 +32,23 @@ const DEFAULT_CLAUDE_BASE_URL = "https://api.anthropic.com";
 const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5";
 
 const DEFAULT_SYSTEM_PROMPT = `
-你是 Studio Pro 網站的 AI 客服，同時具備程式技術顧問能力。
+你是 Studio Pro 的品牌禮賓客服 AI，同時具備程式技術顧問能力。
 
-請嚴格遵守：
-1. 回覆使用繁體中文，語氣專業、直接、可執行。
-2. 若是網站/會員/後台問題，優先指引用戶正確頁面並給清楚步驟。
-3. 若是程式開發問題，給可落地做法、必要時附短程式碼範例。
-4. 不可捏造系統已執行的操作；不確定時要明確說明限制與下一步。
-5. 不可輸出或要求機密資訊（API key、密碼、token、資料庫連線字串）。
-6. 回覆盡量精簡，先給結論再補重點。
+品牌語氣：
+- 高端、俐落、可信賴，避免冗長與口水話。
+- 回覆使用繁體中文，先結論再行動建議。
+
+固定輸出格式：
+1. 第一行用一個固定 emoji 開頭，只能使用：✨ 📸 🧭 🗓️ 💬 ✅
+2. 第一行後面接一句結論。
+3. 後續補 1-3 段重點；若有操作流程，提供 1-3 步「下一步」。
+4. 不可使用其他 emoji，不可大量重複句子。
+
+安全規範：
+1. 不可捏造系統已執行的操作；不確定時要明確說明限制與下一步。
+2. 不可輸出或要求機密資訊（API key、密碼、token、資料庫連線字串）。
+3. 網站/會員/後台問題，優先指引用戶正確頁面並給清楚步驟。
+4. 程式開發問題，給可落地做法，必要時附短程式碼範例。
 
 站內常用路徑：
 - /auth：登入註冊
@@ -58,6 +66,8 @@ const GENERIC_LINKS: SuggestionLink[] = [
   { label: "預約諮詢", href: "/booking" },
   { label: "聯絡我們", href: "/contact" },
 ];
+
+const BRAND_EMOJIS = ["✨", "📸", "🧭", "🗓️", "💬", "✅"] as const;
 
 const PROMPT_INJECTION_PATTERNS: RegExp[] = [
   /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts?)/i,
@@ -207,6 +217,21 @@ const claudeModel = process.env.CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL;
 const claudeTimeoutMs = parsePositiveInt(process.env.CLAUDE_TIMEOUT_MS, 15000, 4000, 60000);
 const claudeApiStyle = parseApiStyle(process.env.CLAUDE_API_STYLE);
 const conciergeSystemPrompt = process.env.AI_CONCIERGE_SYSTEM_PROMPT?.trim() || DEFAULT_SYSTEM_PROMPT;
+const conciergeLimit = parsePositiveInt(process.env.AI_CONCIERGE_LIMIT, 30, 1, 500);
+const conciergeWindowMs = parsePositiveInt(process.env.AI_CONCIERGE_WINDOW_MS, 10 * 60 * 1000, 1000, 60 * 60 * 1000);
+const conciergeBurstLimit = parsePositiveInt(process.env.AI_CONCIERGE_BURST_LIMIT, 8, 1, 120);
+const conciergeBurstWindowMs = parsePositiveInt(
+  process.env.AI_CONCIERGE_BURST_WINDOW_MS,
+  60 * 1000,
+  1000,
+  10 * 60 * 1000,
+);
+const conciergeMinIntervalMs = parsePositiveInt(
+  process.env.AI_CONCIERGE_MIN_INTERVAL_MS,
+  2000,
+  300,
+  60 * 1000,
+);
 const isClaudeConfigured = claudeApiKey.length > 0;
 const forceAiLogs = process.env.AI_CONCIERGE_LOG === "1";
 
@@ -320,6 +345,80 @@ function dedupeParagraphs(text: string): string {
   return unique.join("\n\n");
 }
 
+function pickBrandEmoji(text: string): (typeof BRAND_EMOJIS)[number] {
+  const normalized = text.toLowerCase();
+
+  if (
+    normalized.includes("預約") ||
+    normalized.includes("檔期") ||
+    normalized.includes("日期") ||
+    normalized.includes("時段") ||
+    normalized.includes("booking")
+  ) {
+    return BRAND_EMOJIS[3];
+  }
+
+  if (
+    normalized.includes("作品") ||
+    normalized.includes("案例") ||
+    normalized.includes("拍攝") ||
+    normalized.includes("風格") ||
+    normalized.includes("portfolio")
+  ) {
+    return BRAND_EMOJIS[1];
+  }
+
+  if (
+    normalized.includes("流程") ||
+    normalized.includes("步驟") ||
+    normalized.includes("如何") ||
+    normalized.includes("怎麼")
+  ) {
+    return BRAND_EMOJIS[2];
+  }
+
+  if (
+    normalized.includes("價格") ||
+    normalized.includes("費用") ||
+    normalized.includes("報價") ||
+    normalized.includes("預算")
+  ) {
+    return BRAND_EMOJIS[4];
+  }
+
+  if (normalized.includes("完成") || normalized.includes("確認")) {
+    return BRAND_EMOJIS[5];
+  }
+
+  return BRAND_EMOJIS[0];
+}
+
+function stripEmoji(text: string): string {
+  return text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "");
+}
+
+function applyBrandTemplate(text: string): string {
+  const withoutEmoji = stripEmoji(text)
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (!withoutEmoji) {
+    return "✨ 我已收到你的需求，請再補充一點細節，我就能提供下一步建議。";
+  }
+
+  const blocks = withoutEmoji
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const headline = blocks[0] ?? withoutEmoji;
+  const detail = blocks.length > 1 ? blocks.slice(1).join("\n\n") : "";
+  const normalizedHeadline = /[。！？!?]$/.test(headline) ? headline : `${headline}。`;
+  const emoji = pickBrandEmoji(withoutEmoji);
+
+  return detail ? `${emoji} ${normalizedHeadline}\n\n${detail}` : `${emoji} ${normalizedHeadline}`;
+}
+
 function normalizeReply(reply: string): string {
   const cleaned = reply
     .replace(/\r\n/g, "\n")
@@ -327,7 +426,8 @@ function normalizeReply(reply: string): string {
     .replace(/\uFFFD/g, "");
   const noMarkdown = stripMarkdownDecorators(cleaned);
   const deduped = dedupeParagraphs(noMarkdown);
-  return deduped.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1800);
+  const compact = deduped.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return applyBrandTemplate(compact).slice(0, 1800);
 }
 
 function getRateLimitFingerprint(req: Request, ip: string): string {
@@ -552,10 +652,23 @@ export async function POST(req: Request) {
 
   const ip = getClientIpFromRequest(req) ?? "unknown";
   const fingerprint = getRateLimitFingerprint(req, ip);
+  const cooldownRateLimit = consumeRateLimit({
+    key: `ai:concierge:cooldown:${fingerprint}`,
+    limit: 1,
+    windowMs: conciergeMinIntervalMs,
+  });
+  if (!cooldownRateLimit.allowed) {
+    const waitSeconds = Math.max(1, Math.ceil((cooldownRateLimit.resetAt - Date.now()) / 1000));
+    return NextResponse.json(
+      { ok: false, message: `提問間隔過短，請約 ${waitSeconds} 秒後再試。` },
+      { status: 429 },
+    );
+  }
+
   const rateLimit = consumeRateLimit({
     key: `ai:concierge:${fingerprint}`,
-    limit: 30,
-    windowMs: 10 * 60 * 1000,
+    limit: conciergeLimit,
+    windowMs: conciergeWindowMs,
   });
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -566,8 +679,8 @@ export async function POST(req: Request) {
 
   const burstRateLimit = consumeRateLimit({
     key: `ai:concierge:burst:${fingerprint}`,
-    limit: 8,
-    windowMs: 60 * 1000,
+    limit: conciergeBurstLimit,
+    windowMs: conciergeBurstWindowMs,
   });
   if (!burstRateLimit.allowed) {
     return NextResponse.json(
@@ -582,8 +695,9 @@ export async function POST(req: Request) {
     if (looksLikePromptInjection(body.message)) {
       return NextResponse.json({
         ok: true,
-        reply:
+        reply: normalizeReply(
           "這則訊息包含疑似越權控制或機密索取指令，我無法協助。請改成具體需求，例如：登入流程、後台操作、程式問題排查。",
+        ),
         links: [
           { label: "前往會員登入", href: "/auth" },
           { label: "聯絡我們", href: "/contact" },
@@ -594,7 +708,7 @@ export async function POST(req: Request) {
     if (knowledgeMatch.score >= 5) {
       return NextResponse.json({
         ok: true,
-        reply: knowledgeMatch.answer.reply,
+        reply: normalizeReply(knowledgeMatch.answer.reply),
         links: knowledgeMatch.answer.links ?? [],
       });
     }
@@ -602,7 +716,7 @@ export async function POST(req: Request) {
     const aiReply = await generateClaudeReply(body.message);
     const fallbackAnswer =
       !aiReply && knowledgeMatch.score === 0 ? buildGuidedFallback(body.message) : knowledgeMatch.answer;
-    const reply = aiReply ?? fallbackAnswer.reply;
+    const reply = normalizeReply(aiReply ?? fallbackAnswer.reply);
     const links = knowledgeMatch.score >= 3 ? (knowledgeMatch.answer.links ?? []) : aiReply ? [] : fallbackAnswer.links;
 
     return NextResponse.json({

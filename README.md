@@ -53,6 +53,11 @@ CLAUDE_MODEL="claude-sonnet-4-5"
 CLAUDE_API_STYLE="auto" # auto | anthropic | openai
 CLAUDE_TIMEOUT_MS="15000"
 AI_CONCIERGE_LOG="0" # set to 1 to print AI endpoint failure reasons in production logs
+AI_CONCIERGE_MIN_INTERVAL_MS="2000" # minimum delay between two asks from same fingerprint
+AI_CONCIERGE_BURST_LIMIT="8" # max asks per burst window
+AI_CONCIERGE_BURST_WINDOW_MS="60000"
+AI_CONCIERGE_LIMIT="30" # max asks per long window
+AI_CONCIERGE_WINDOW_MS="600000"
 ```
 
 After changing env vars on Zeabur, trigger a redeploy/restart so runtime containers load the new values.

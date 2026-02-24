@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,8 @@ type ConciergeResponse = {
 
 const QUICK_ASKS = ["價格怎麼算？", "如何預約拍攝？", "我要登入會員", "如何進入管理後台？"];
 const DUPLICATE_SEND_WINDOW_MS = 1200;
-const TYPE_INTERVAL_MS = 18;
+const TYPE_INTERVAL_MS = 20;
+const AUTO_STICK_THRESHOLD_PX = 32;
 
 function cleanAssistantReply(raw: string): string {
   const noControl = raw
@@ -92,7 +93,7 @@ export function HomeAiConcierge() {
     {
       id: "welcome",
       role: "assistant",
-      content: "嗨，我是品牌旗艦 AI 客服。你可以直接問我價格、預約、登入或後台相關問題。",
+      content: "✨ 嗨，我是品牌旗艦 AI 客服。你可以直接問我價格、預約、登入或後台相關問題。",
     },
   ]);
 
@@ -101,6 +102,7 @@ export function HomeAiConcierge() {
   const inFlightRef = useRef(false);
   const lastSubmittedRef = useRef<{ text: string; at: number } | null>(null);
   const typingAbortRef = useRef<AbortController | null>(null);
+  const shouldStickToBottomRef = useRef(true);
 
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending]);
 
@@ -111,42 +113,40 @@ export function HomeAiConcierge() {
   }, []);
 
   useEffect(() => {
+    if (open) {
+      shouldStickToBottomRef.current = true;
+      scrollChatToBottom("auto", true);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) {
       return;
     }
-
-    const el = listRef.current;
-    if (!el) {
-      return;
-    }
-
-    el.scrollTop = el.scrollHeight;
+    scrollChatToBottom("auto");
   }, [messages, open]);
 
-  function scrollChatToBottom() {
+  function isNearBottom(el: HTMLDivElement): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= AUTO_STICK_THRESHOLD_PX;
+  }
+
+  function scrollChatToBottom(behavior: ScrollBehavior, force = false) {
     const el = listRef.current;
     if (!el) {
       return;
     }
-    el.scrollTop = el.scrollHeight;
-  }
-
-  function handleChatWheel(event: WheelEvent<HTMLDivElement>) {
-    const el = listRef.current;
-    if (!el || el.scrollHeight <= el.clientHeight) {
+    if (!force && !shouldStickToBottomRef.current) {
       return;
     }
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }
 
-    const atTop = el.scrollTop <= 0;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-    const scrollingUp = event.deltaY < 0;
-    const scrollingDown = event.deltaY > 0;
-
-    if ((scrollingUp && !atTop) || (scrollingDown && !atBottom)) {
-      event.preventDefault();
-      event.stopPropagation();
-      el.scrollTop += event.deltaY;
+  function handleChatScroll() {
+    const el = listRef.current;
+    if (!el) {
+      return;
     }
+    shouldStickToBottomRef.current = isNearBottom(el);
   }
 
   async function appendAssistantMessageWithTyping(rawReply: string, links?: Array<{ label: string; href: string }>) {
@@ -161,7 +161,7 @@ export function HomeAiConcierge() {
     setMessages((current) => [...current, { id: messageId, role: "assistant", content: "", links: [] }]);
 
     const chars = Array.from(content);
-    const step = chars.length > 500 ? 4 : 2;
+    const step = chars.length > 900 ? 12 : chars.length > 500 ? 8 : chars.length > 220 ? 5 : 3;
 
     for (let i = step; i <= chars.length; i += step) {
       if (controller.signal.aborted) {
@@ -172,7 +172,6 @@ export function HomeAiConcierge() {
       setMessages((current) =>
         current.map((message) => (message.id === messageId ? { ...message, content: chunk } : message)),
       );
-      scrollChatToBottom();
       await sleep(TYPE_INTERVAL_MS);
     }
 
@@ -185,7 +184,6 @@ export function HomeAiConcierge() {
         message.id === messageId ? { ...message, content, links: uniqueLinks } : message,
       ),
     );
-    scrollChatToBottom();
 
     if (typingAbortRef.current === controller) {
       typingAbortRef.current = null;
@@ -205,6 +203,7 @@ export function HomeAiConcierge() {
     }
     lastSubmittedRef.current = { text: trimmed, at: now };
     inFlightRef.current = true;
+    shouldStickToBottomRef.current = true;
 
     const userMessage: ChatMessage = {
       id: `u-${seq.current++}`,
@@ -278,7 +277,7 @@ export function HomeAiConcierge() {
 
         <div
           ref={listRef}
-          onWheel={handleChatWheel}
+          onScroll={handleChatScroll}
           className="max-h-[52vh] space-y-2 overflow-y-auto overscroll-contain px-3 py-3"
         >
           {messages.map((msg) => (
