@@ -14,12 +14,39 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["500", "600", "700"],
 });
 
+const siteUrlCandidate =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.SITE_URL ??
+  process.env.APP_URL ??
+  process.env.ZEABUR_URL ??
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+  process.env.VERCEL_URL ??
+  "http://localhost:3000";
+
+const siteUrl = siteUrlCandidate.startsWith("http://") || siteUrlCandidate.startsWith("https://")
+  ? siteUrlCandidate
+  : `https://${siteUrlCandidate}`;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Studio Pro | 專業攝影工作室",
     template: "%s | Studio Pro",
   },
   description: "高端攝影工作室，提供從企劃到交付的禮賓級預約流程。",
+  openGraph: {
+    type: "website",
+    siteName: "Studio Pro",
+    title: "Studio Pro | 專業攝影工作室",
+    description: "高端攝影工作室，提供從企劃到交付的禮賓級預約流程。",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Studio Pro" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Studio Pro | 專業攝影工作室",
+    description: "高端攝影工作室，提供從企劃到交付的禮賓級預約流程。",
+    images: ["/twitter-image"],
+  },
 };
 
 export default function RootLayout({

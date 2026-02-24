@@ -9,7 +9,7 @@ import { HomeAiConcierge } from "@/components/ai/home-ai-concierge";
 import { brandPartners, caseStudies, heroStats, testimonials } from "@/lib/site-content";
 
 export const metadata: Metadata = {
-  title: "首頁",
+  title: "品牌旗艦",
 };
 
 const promiseCards = [

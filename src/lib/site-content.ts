@@ -23,7 +23,7 @@ export type BrandPartner = {
 export const siteName = "Studio Pro";
 
 export const navItems: NavItem[] = [
-  { href: "/", label: "首頁" },
+  { href: "/", label: "品牌旗艦" },
   { href: "/portfolio", label: "作品集" },
   { href: "/services", label: "服務" },
   { href: "/materials", label: "素材包" },

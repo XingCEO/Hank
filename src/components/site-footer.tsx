@@ -80,7 +80,7 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <FooterLinkList title="快速導覽" links={[{ href: "/", label: "首頁" }, ...primaryNavLinks]} />
+          <FooterLinkList title="快速導覽" links={[{ href: "/", label: "品牌旗艦" }, ...primaryNavLinks]} />
           <FooterLinkList title="服務與方案" links={serviceLinks} />
           <FooterLinkList title="支援資源" links={supportLinks} />
           <FooterLinkList title="社群媒體" links={socialLinks} />

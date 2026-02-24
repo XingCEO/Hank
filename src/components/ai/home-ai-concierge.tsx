@@ -31,7 +31,7 @@ export function HomeAiConcierge() {
     {
       id: "welcome",
       role: "assistant",
-      content: "嗨，我是首頁 AI 客服。你可以直接問我價格、預約、登入或後台相關問題。",
+      content: "嗨，我是品牌旗艦 AI 客服。你可以直接問我價格、預約、登入或後台相關問題。",
     },
   ]);
 
