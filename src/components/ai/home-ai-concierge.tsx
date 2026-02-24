@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,67 @@ type ConciergeResponse = {
 };
 
 const QUICK_ASKS = ["價格怎麼算？", "如何預約拍攝？", "我要登入會員", "如何進入管理後台？"];
+const DUPLICATE_SEND_WINDOW_MS = 1200;
+const TYPE_INTERVAL_MS = 18;
+
+function cleanAssistantReply(raw: string): string {
+  const noControl = raw
+    .replace(/\r\n/g, "\n")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/\uFFFD/g, "");
+
+  const noMarkdown = noControl
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1");
+
+  const blocks = noMarkdown
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  const uniqueBlocks: string[] = [];
+  const seen = new Set<string>();
+  for (const block of blocks) {
+    const key = block.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    uniqueBlocks.push(block);
+  }
+
+  const normalized = (uniqueBlocks.length > 0 ? uniqueBlocks.join("\n\n") : noMarkdown)
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return normalized || "AI 客服暫時無法回應。";
+}
+
+function dedupeLinks(links: Array<{ label: string; href: string }> | undefined): Array<{ label: string; href: string }> {
+  if (!links || links.length === 0) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const unique: Array<{ label: string; href: string }> = [];
+  for (const item of links) {
+    const key = `${item.label}|${item.href}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function HomeAiConcierge() {
   const [open, setOpen] = useState(false);
@@ -36,14 +97,114 @@ export function HomeAiConcierge() {
   ]);
 
   const seq = useRef(1);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const inFlightRef = useRef(false);
+  const lastSubmittedRef = useRef<{ text: string; at: number } | null>(null);
+  const typingAbortRef = useRef<AbortController | null>(null);
 
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending]);
 
-  async function ask(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || sending) {
+  useEffect(() => {
+    return () => {
+      typingAbortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
       return;
     }
+
+    const el = listRef.current;
+    if (!el) {
+      return;
+    }
+
+    el.scrollTop = el.scrollHeight;
+  }, [messages, open]);
+
+  function scrollChatToBottom() {
+    const el = listRef.current;
+    if (!el) {
+      return;
+    }
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function handleChatWheel(event: WheelEvent<HTMLDivElement>) {
+    const el = listRef.current;
+    if (!el || el.scrollHeight <= el.clientHeight) {
+      return;
+    }
+
+    const atTop = el.scrollTop <= 0;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    const scrollingUp = event.deltaY < 0;
+    const scrollingDown = event.deltaY > 0;
+
+    if ((scrollingUp && !atTop) || (scrollingDown && !atBottom)) {
+      event.preventDefault();
+      event.stopPropagation();
+      el.scrollTop += event.deltaY;
+    }
+  }
+
+  async function appendAssistantMessageWithTyping(rawReply: string, links?: Array<{ label: string; href: string }>) {
+    const content = cleanAssistantReply(rawReply);
+    const uniqueLinks = dedupeLinks(links);
+    const messageId = `a-${seq.current++}`;
+
+    const controller = new AbortController();
+    typingAbortRef.current?.abort();
+    typingAbortRef.current = controller;
+
+    setMessages((current) => [...current, { id: messageId, role: "assistant", content: "", links: [] }]);
+
+    const chars = Array.from(content);
+    const step = chars.length > 500 ? 4 : 2;
+
+    for (let i = step; i <= chars.length; i += step) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      const chunk = chars.slice(0, Math.min(i, chars.length)).join("");
+      setMessages((current) =>
+        current.map((message) => (message.id === messageId ? { ...message, content: chunk } : message)),
+      );
+      scrollChatToBottom();
+      await sleep(TYPE_INTERVAL_MS);
+    }
+
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    setMessages((current) =>
+      current.map((message) =>
+        message.id === messageId ? { ...message, content, links: uniqueLinks } : message,
+      ),
+    );
+    scrollChatToBottom();
+
+    if (typingAbortRef.current === controller) {
+      typingAbortRef.current = null;
+    }
+  }
+
+  async function ask(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || sending || inFlightRef.current) {
+      return;
+    }
+
+    const lastSubmitted = lastSubmittedRef.current;
+    const now = Date.now();
+    if (lastSubmitted && lastSubmitted.text === trimmed && now - lastSubmitted.at < DUPLICATE_SEND_WINDOW_MS) {
+      return;
+    }
+    lastSubmittedRef.current = { text: trimmed, at: now };
+    inFlightRef.current = true;
 
     const userMessage: ChatMessage = {
       id: `u-${seq.current++}`,
@@ -66,21 +227,13 @@ export function HomeAiConcierge() {
         throw new Error(payload.message ?? "AI 客服暫時無法回應。");
       }
 
-      const assistantMessage: ChatMessage = {
-        id: `a-${seq.current++}`,
-        role: "assistant",
-        content: payload.reply,
-        links: payload.links ?? [],
-      };
-      setMessages((current) => [...current, assistantMessage]);
+      await appendAssistantMessageWithTyping(payload.reply, payload.links ?? []);
     } catch (error) {
-      const assistantMessage: ChatMessage = {
-        id: `e-${seq.current++}`,
-        role: "assistant",
-        content: error instanceof Error ? error.message : "AI 客服暫時無法回應。",
-      };
-      setMessages((current) => [...current, assistantMessage]);
+      await appendAssistantMessageWithTyping(
+        error instanceof Error ? error.message : "AI 客服暫時無法回應。",
+      );
     } finally {
+      inFlightRef.current = false;
       setSending(false);
     }
   }
@@ -123,7 +276,11 @@ export function HomeAiConcierge() {
           </button>
         </header>
 
-        <div className="max-h-[52vh] space-y-2 overflow-y-auto px-3 py-3">
+        <div
+          ref={listRef}
+          onWheel={handleChatWheel}
+          className="max-h-[52vh] space-y-2 overflow-y-auto overscroll-contain px-3 py-3"
+        >
           {messages.map((msg) => (
             <article
               key={msg.id}
@@ -134,7 +291,7 @@ export function HomeAiConcierge() {
                   : "ml-8 border-primary/30 bg-primary/10",
               )}
             >
-              <p>{msg.content}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
               {msg.links && msg.links.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {msg.links.map((link) => (

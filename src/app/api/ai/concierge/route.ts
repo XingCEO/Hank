@@ -288,8 +288,46 @@ function buildGuidedFallback(message: string): ConciergeAnswer {
   };
 }
 
+function stripMarkdownDecorators(text: string): string {
+  return text
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1");
+}
+
+function dedupeParagraphs(text: string): string {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length === 0) {
+    return text.trim();
+  }
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const block of paragraphs) {
+    const key = block.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push(block);
+  }
+
+  return unique.join("\n\n");
+}
+
 function normalizeReply(reply: string): string {
-  return reply.replace(/\n{3,}/g, "\n\n").trim().slice(0, 1800);
+  const cleaned = reply
+    .replace(/\r\n/g, "\n")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/\uFFFD/g, "");
+  const noMarkdown = stripMarkdownDecorators(cleaned);
+  const deduped = dedupeParagraphs(noMarkdown);
+  return deduped.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1800);
 }
 
 function getRateLimitFingerprint(req: Request, ip: string): string {
