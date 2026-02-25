@@ -86,7 +86,7 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 # 專案全面審查報告（2026-02-25）
 
 > 以下為根據 codebase 全面掃描後，針對**安全性漏洞**、**效能優化**、**設計風格一致性**三大方向的完整審查結果。
-> **2026-02-26 更新**：所有高風險 (H1–H4) 與中風險 (M1–M8) 安全性問題已全部修復。UI/UX 已全面重新設計為淺色暖灰系配色。
+> **2026-02-26 更新（第二輪）**：M3 Admin rate limiting、L2 cursor pagination、L6 帳號鎖定、Toast 系統、Auth 頁面品牌化重設計全部完成。目前已推送至 `main`（最新 commit `bd4283d`）。
 
 ---
 
@@ -108,6 +108,25 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 | M7 ✅ | bcrypt salt rounds 10 → 12 | `src/lib/auth/password.ts` |
 | M8 ✅ | presign-upload 與 presign-download 加入 audit log | `presign-upload/route.ts`、`presign-download/route.ts` |
 | P3 ✅ | Prisma client 在所有環境設為 global singleton | `src/lib/prisma.ts` |
+| M3 ✅ | Admin PATCH 端點加入 rate limiting（roles 20/min、password 10/min、status 20/min） | `src/app/api/admin/users/[id]/roles/route.ts`、`password/route.ts`、`status/route.ts` |
+| L2 ✅ | Admin users / audit-logs 改為 cursor-based pagination（limit+1 pattern，回傳 `nextCursor`） | `src/app/api/admin/users/route.ts`、`audit-logs/route.ts` |
+| L6 ✅ | Login 帳號鎖定：5 次失敗後鎖定 15 分鐘，回傳 HTTP 423 + `lockedUntil` | `src/lib/security/rate-limit.ts`、`src/app/api/auth/login/route.ts` |
+
+### Toast 通知系統
+
+| # | 內容 | 修改檔案 |
+|---|---|---|
+| Toast ✅ | 新增全域 Toast 元件（Radix UI + framer-motion），4 種變體：default / success / error / info | `src/components/ui/toast.tsx` |
+| Layout ✅ | `ToastProvider` 包裹至 root layout | `src/app/layout.tsx` |
+
+### Auth 頁面品牌化重設計（第二版）
+
+| # | 內容 | 修改檔案 |
+|---|---|---|
+| Auth ✅ | 登入頁：深色品牌面板（`bg-foreground`）+ 模擬作品格 + 統計條，完全獨立於註冊視圖 | `src/app/auth/page.tsx` |
+| Auth ✅ | 註冊頁：淺色邀請面板（暖白）+ 3 張功能卡（與首頁 promiseCards 結構一致）+ 客戶引言 | `src/app/auth/page.tsx` |
+| Auth ✅ | 切換動畫：`AnimatePresence mode="wait"` 全面板交叉淡入，無 Tab 按鈕，改用底部 CTA 卡片切換 | `src/app/auth/page.tsx` |
+| Auth ✅ | 右側頂部新增「← 返回主站」Link，統一品牌 uppercase kicker typography | `src/app/auth/page.tsx` |
 
 ### UI/UX 重新設計
 
@@ -128,6 +147,14 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 
 - **資料庫遷移**：需執行 `prisma/migrations/202602261000_add_session_version/migration.sql`（新增 `session_version` 欄位至 `users` 表）
 - 部署後舊 JWT token 會因缺少 `sv` claim 而自動失效，所有使用者需重新登入（安全預期行為）
+
+### Git 紀錄（最新三筆）
+
+| Commit | 說明 |
+|---|---|
+| `bd4283d` | feat: auth page brand-connected redesign - distinct login/register panels |
+| `8860dd1` | feat: revamp auth UI with animations + fix M3/L2/L6 security issues + add Toast system |
+| `b3f05ba` | feat: 安全性修復 (H1-H4, M1-M8) + UI/UX 淺色暖灰重設計 + sessionVersion + Noto Sans TC |
 
 ---
 
@@ -156,7 +183,7 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 |---|---|---|---|
 | M1 | **註冊端點使用者列舉** | `src/app/api/auth/register/route.ts` | ✅ 改用通用錯誤訊息 |
 | M2 | **change-password 無 rate limiting** | `src/app/api/auth/change-password/route.ts` | ✅ 5 次 / 15 分鐘 |
-| M3 | **大多數 admin 寫入端點無 rate limiting** | 所有 `src/app/api/admin/` PATCH 路由 | ⚠️ 未修（低優先） |
+| M3 | **大多數 admin 寫入端點無 rate limiting** | 所有 `src/app/api/admin/` PATCH 路由 | ✅ 已修復：roles 20/min、password 10/min、status 20/min |
 | M4 | **專案狀態無轉換驗證** | `src/app/api/projects/[id]/status/route.ts` | ✅ 狀態機矩陣 |
 | M5 | **Asset MIME type 無白名單** | `assets/route.ts`、`presign-upload/route.ts` | ✅ MIME 白名單 |
 | M6 | **Presigned upload 無 Content-Length 限制** | `src/lib/storage/s3.ts` | ✅ 500MB 上限 |
@@ -170,11 +197,11 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 | # | 問題 | 位置 |
 |---|---|---|
 | L1 | **Booking 端點無持久化**：回傳假的 `BK-${Date.now()}`，不對應任何真實紀錄 | `src/app/api/booking/route.ts` |
-| L2 | **Admin users / audit-logs 無分頁游標**：硬編碼 `take: 200`，大量資料回應過大 | admin routes |
-| L3 | **無 CAPTCHA / bot 防護**（register、login、booking） | auth + booking routes |
-| L4 | **`x-forwarded-for` 可被偽造**（須由 load balancer 正確覆寫） | `src/lib/security/request-guard.ts` |
-| L5 | **專案詳情回傳客戶電話與所有成員 email**：視業務需求評估是否過度曝露 | `src/app/api/projects/[id]/route.ts` |
-| L6 | **Login 無帳號鎖定**（N 次失敗後暫停），rate limit 以 IP 為 key，共用 IP 下互相影響 | `src/app/api/auth/login/route.ts` |
+| L2 | **Admin users / audit-logs 無分頁游標**：硬編碼 `take: 200`，大量資料回應過大 | admin routes | ✅ 已修復：cursor-based pagination |
+| L3 | **無 CAPTCHA / bot 防護**（register、login、booking） | auth + booking routes | ⚠️ 未修 |
+| L4 | **`x-forwarded-for` 可被偽造**（須由 load balancer 正確覆寫） | `src/lib/security/request-guard.ts` | ⚠️ 未修 |
+| L5 | **專案詳情回傳客戶電話與所有成員 email**：視業務需求評估是否過度曝露 | `src/app/api/projects/[id]/route.ts` | ⚠️ 未修 |
+| L6 | **Login 無帳號鎖定**（N 次失敗後暫停） | `src/app/api/auth/login/route.ts` | ✅ 已修復：5 次失敗鎖定 15 分鐘 |
 
 ---
 
@@ -188,9 +215,9 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 | `GET /api/auth/me` | — | ❌ | ✅ | — | — |
 | `PATCH /api/auth/change-password` | ✅ | ✅ 5/15min | ✅ | ✅ Zod + 密碼政策 | ✅ |
 | `GET /api/admin/users` | — | ❌ | ✅ admin | — | — |
-| `PATCH /api/admin/users/:id/roles` | ✅ | ❌ | ✅ admin | ✅ Zod | ✅ |
-| `PATCH /api/admin/users/:id/password` | ✅ | ❌ | ✅ admin | ✅ 密碼政策 | ✅ |
-| `PATCH /api/admin/users/:id/status` | ✅ | ❌ | ✅ admin | ✅ Zod | ✅ |
+| `PATCH /api/admin/users/:id/roles` | ✅ | ✅ 20/min | ✅ admin | ✅ Zod | ✅ |
+| `PATCH /api/admin/users/:id/password` | ✅ | ✅ 10/min | ✅ admin | ✅ 密碼政策 | ✅ |
+| `PATCH /api/admin/users/:id/status` | ✅ | ✅ 20/min | ✅ admin | ✅ Zod | ✅ |
 | `POST /api/booking` | ✅ | ✅ 20/hr | — | ✅ Zod | ❌ |
 | `GET /api/projects` | — | ❌ | ✅ | — | — |
 | `POST /api/projects` | ✅ | ❌ | ✅ admin | ✅ Zod | ✅ |
@@ -258,7 +285,7 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 | Form / Input / Select / Textarea | ✅ | 搭配 react-hook-form |
 | Label | ✅ | — |
 | Lightbox（案例頁） | ✅ | `case-gallery-lightbox.tsx` |
-| Toast / Notification | ❌ | 無全域通知系統 |
+| Toast / Notification | ✅ | `src/components/ui/toast.tsx`，4 變體，framer-motion 動畫 |
 | Modal / Dialog | ❌ | 需要時可用 Radix UI Dialog |
 | Skeleton / Loading | ❌ | 列表頁無骨架屏 |
 | 404 Not Found | ✅ | `not-found.tsx` |
@@ -270,15 +297,17 @@ curl -sS -X POST "${CLAUDE_API_BASE_URL%/}/v1/chat/completions" \
 | 優先 | 項目 | 說明 |
 |---|---|---|
 | ⭐⭐⭐ | 引入 Redis rate limiting | 用 Upstash Redis（serverless）替換記憶體 Map，解決多實例與重部署問題 |
-| ⭐⭐⭐ | Session version / revocation | DB 加 `sessionVersion` 欄位；密碼變更後 +1，JWT 帶 version 做比對 |
-| ⭐⭐⭐ | CSRF token（或嚴格 Origin policy） | 對缺少 Origin 的 POST/PATCH/DELETE 請求回傳 403 |
-| ⭐⭐ | 專案狀態機 | 定義合法轉換矩陣（如 `lead → quoted → booked → ...`），拒絕跳躍 |
-| ⭐⭐ | MIME type 白名單 | 限制上傳為 `image/*`、`video/*`、`application/pdf` |
-| ⭐⭐ | API 分頁（cursor） | Admin users、audit-logs、assets 列表改為 cursor-based pagination |
-| ⭐⭐ | 中文 Web Font | 載入 Noto Sans TC 400/500/700 以統一跨平台字型表現 |
-| ⭐ | Dark mode | 補齊 `.dark` CSS 變數組 |
-| ⭐ | Toast / 全域通知 | 加入 sonner 或 radix-toast 元件 |
-| ⭐ | Booking 後端整合 | 將預約寫入 DB，銜接排程管理 |
+| ~~⭐⭐⭐~~ ✅ | Session version / revocation | 已完成：`sessionVersion` 機制 |
+| ~~⭐⭐⭐~~ ✅ | CSRF token（或嚴格 Origin policy） | 已完成：缺少 Origin 回傳 403 |
+| ~~⭐⭐~~ ✅ | 專案狀態機 | 已完成：合法轉換矩陣 |
+| ~~⭐⭐~~ ✅ | MIME type 白名單 | 已完成：`image/*`、`video/*`、`application/pdf` |
+| ~~⭐⭐~~ ✅ | API 分頁（cursor） | 已完成：users、audit-logs cursor pagination |
+| ~~⭐⭐~~ ✅ | 中文 Web Font | 已完成：Noto Sans TC 400/500/700 |
+| ~~⭐⭐~~ ✅ | Admin PATCH rate limiting | 已完成：roles/password/status |
+| ~~⭐⭐~~ ✅ | 帳號鎖定 | 已完成：5 次失敗 → 鎖定 15 分鐘 |
+| ~~⭐~~ ✅ | Toast / 全域通知 | 已完成：`src/components/ui/toast.tsx` |
+| ⭐ | Dark mode | 補齊 `.dark` CSS 變數組（未做） |
+| ⭐ | Booking 後端整合 | 將預約寫入 DB，銜接排程管理（未做） |
 
 ---
 
