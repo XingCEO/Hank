@@ -5,6 +5,7 @@ import { requireRoles, requireSession } from "@/lib/auth/request";
 import { hashPassword } from "@/lib/auth/password";
 import { passwordPolicySchema } from "@/lib/auth/password-policy";
 import { createAuditLog } from "@/lib/audit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const patchPasswordSchema = z.object({
@@ -21,6 +22,12 @@ export async function PATCH(req: Request, context: RouteContext) {
   const blockedByOrigin = guardSameOrigin(req);
   if (blockedByOrigin) {
     return blockedByOrigin;
+  }
+
+  const clientIp = getClientIpFromRequest(req) ?? "unknown";
+  const rateLimit = consumeRateLimit({ key: `admin:password:${clientIp}`, limit: 10, windowMs: 60 * 1000 });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ ok: false, message: "Too many requests." }, { status: 429 });
   }
 
   const auth = await requireSession();

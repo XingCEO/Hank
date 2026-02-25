@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Noto_Sans_TC } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/ultra/smooth-scroll-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -66,7 +67,9 @@ export default function RootLayout({
     <html lang="zh-Hant">
       <body className={`${inter.variable} ${jakarta.variable} ${notoSansTC.variable}`}>
         <SmoothScrollProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </SmoothScrollProvider>
       </body>
     </html>

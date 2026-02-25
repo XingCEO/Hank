@@ -5,7 +5,7 @@ import { verifyPassword } from "@/lib/auth/password";
 import { createSessionToken, getSessionCookieOptions } from "@/lib/auth/session";
 import { createAuditLog } from "@/lib/audit";
 import { normalizeRoleKeys } from "@/lib/auth/normalize";
-import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { checkAccountLock, clearLoginFailures, consumeRateLimit, trackLoginFailure } from "@/lib/security/rate-limit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const loginSchema = z.object({
@@ -34,6 +34,16 @@ export async function POST(req: Request) {
   try {
     const body = loginSchema.parse(await req.json());
     const email = body.email.toLowerCase().trim();
+
+    /* 帳號鎖定檢查 */
+    const lock = checkAccountLock(email);
+    if (lock.locked) {
+      return NextResponse.json(
+        { ok: false, message: "Login temporarily locked due to too many failed attempts.", lockedUntil: lock.lockedUntil },
+        { status: 423 },
+      );
+    }
+
     const invalidCredentialsResponse = NextResponse.json(
       { ok: false, message: "Invalid email or password." },
       { status: 401 },
@@ -51,16 +61,27 @@ export async function POST(req: Request) {
     });
 
     if (!user || !user.passwordHash) {
+      trackLoginFailure(email);
       return invalidCredentialsResponse;
     }
 
     const valid = await verifyPassword(body.password, user.passwordHash);
     if (!valid) {
+      const failResult = trackLoginFailure(email);
+      if (failResult.locked) {
+        return NextResponse.json(
+          { ok: false, message: "Too many failed attempts. Account locked for 15 minutes.", lockedUntil: failResult.lockedUntil },
+          { status: 423 },
+        );
+      }
       return invalidCredentialsResponse;
     }
     if (!user.isActive) {
       return invalidCredentialsResponse;
     }
+
+    /* 登入成功：清除失敗紀錄 */
+    clearLoginFailures(email);
 
     const roles = normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key));
     if (roles.length === 0) {

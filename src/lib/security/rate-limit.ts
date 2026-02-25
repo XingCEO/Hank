@@ -56,3 +56,50 @@ export function consumeRateLimit({ key, limit, windowMs }: ConsumeRateLimitParam
     resetAt: current.resetAt,
   };
 }
+
+/* ─── 帳號登入失敗鎖定 ─── */
+const LOGIN_MAX_FAILURES = 5;
+const LOGIN_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 分鐘
+
+declare global {
+  var __studioLoginFailures: Map<string, { count: number; lockedUntil?: number }> | undefined;
+}
+
+const loginFailures = global.__studioLoginFailures ?? new Map<string, { count: number; lockedUntil?: number }>();
+global.__studioLoginFailures = loginFailures;
+
+export function checkAccountLock(email: string): { locked: boolean; lockedUntil?: number } {
+  const record = loginFailures.get(email.toLowerCase());
+  if (!record) return { locked: false };
+  if (record.lockedUntil && record.lockedUntil > Date.now()) {
+    return { locked: true, lockedUntil: record.lockedUntil };
+  }
+  return { locked: false };
+}
+
+export function trackLoginFailure(email: string): { locked: boolean; lockedUntil?: number } {
+  const key = email.toLowerCase();
+  const now = Date.now();
+  const record = loginFailures.get(key) ?? { count: 0 };
+
+  // 若之前的鎖定已解除，重設計數
+  if (record.lockedUntil && record.lockedUntil <= now) {
+    record.count = 0;
+    record.lockedUntil = undefined;
+  }
+
+  record.count += 1;
+
+  if (record.count >= LOGIN_MAX_FAILURES) {
+    record.lockedUntil = now + LOGIN_LOCK_DURATION_MS;
+    loginFailures.set(key, record);
+    return { locked: true, lockedUntil: record.lockedUntil };
+  }
+
+  loginFailures.set(key, record);
+  return { locked: false };
+}
+
+export function clearLoginFailures(email: string): void {
+  loginFailures.delete(email.toLowerCase());
+}
