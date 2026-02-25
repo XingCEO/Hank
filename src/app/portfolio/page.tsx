@@ -42,9 +42,9 @@ export default function PortfolioPage() {
         <div className="container-ultra space-y-8">
           <div className="grid gap-4 md:grid-cols-3">
             {portfolioStats.map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-border/70 bg-card/30 p-4">
-                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">{stat.label}</p>
-                <p className="mt-2 text-3xl accent-text">{stat.value}</p>
+              <div key={stat.label} className="rounded-xl border border-border/40 bg-white/70 p-4">
+                <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">{stat.label}</p>
+                <p className="mt-2 text-2xl font-semibold">{stat.value}</p>
               </div>
             ))}
           </div>
@@ -52,7 +52,7 @@ export default function PortfolioPage() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {caseStudies.map((item, index) => (
               <Reveal key={item.slug} delay={index * 0.05}>
-                <Link href={`/cases/${item.slug}`} className="group block rounded-2xl border border-border/70 bg-card/30 p-3">
+                <Link href={`/cases/${item.slug}`} className="group block overflow-hidden rounded-xl border border-border/40 bg-white p-3">
                   <div className="relative overflow-hidden rounded-xl">
                     <SafeImage
                       src={item.heroImage}

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessProject, hasRole } from "@/lib/auth/authorization";
 import { requireSession } from "@/lib/auth/request";
-import { PROJECT_STATUSES } from "@/lib/auth/constants";
+import { PROJECT_STATUSES, isValidStatusTransition } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
@@ -54,6 +54,16 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     if (project.status === body.toStatus) {
       return NextResponse.json({ ok: true, projectStatus: project.status });
+    }
+
+    if (!isValidStatusTransition(project.status, body.toStatus)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: `無法從 "${project.status}" 轉換到 "${body.toStatus}"。請確認專案狀態流程。`,
+        },
+        { status: 422 },
+      );
     }
 
     const updated = await prisma.$transaction(async (tx) => {

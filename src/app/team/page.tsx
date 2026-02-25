@@ -87,7 +87,7 @@ export default function TeamPage() {
           <StaggerReveal className="mt-8 grid gap-4 sm:grid-cols-3">
             {stats.map((item) => (
               <PremiumCard key={item.label}>
-                <p className="text-3xl accent-text">{item.value}</p>
+                <p className="text-3xl font-semibold">{item.value}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{item.label}</p>
               </PremiumCard>
             ))}
@@ -99,7 +99,7 @@ export default function TeamPage() {
         <div className="container-ultra grid gap-5 lg:grid-cols-2">
           {members.map((member, index) => (
             <Reveal key={member.name} delay={index * 0.06}>
-              <article className="overflow-hidden rounded-2xl border border-border/70 bg-card/30">
+              <article className="overflow-hidden rounded-xl border border-border/40 bg-white/70">
                 <div className="grid md:grid-cols-[0.9fr_1.1fr]">
                   <div className="relative h-72 md:h-full">
                     <SafeImage
@@ -111,14 +111,14 @@ export default function TeamPage() {
                     />
                   </div>
                   <div className="space-y-4 p-6 md:p-7">
-                    <p className="text-xs tracking-[0.2em] text-primary uppercase">{member.role}</p>
-                    <h2 className="text-2xl">{member.name}</h2>
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">{member.role}</p>
+                    <h2 className="text-xl font-semibold">{member.name}</h2>
                     <p className="text-sm leading-relaxed text-muted-foreground md:text-base">{member.description}</p>
                     <div className="flex flex-wrap gap-2">
                       {member.specialties.map((item) => (
                         <span
                           key={item}
-                          className="rounded-full border border-border/70 bg-secondary/30 px-3 py-1 text-xs text-muted-foreground"
+                          className="rounded-full border border-border/40 bg-secondary/40 px-3 py-1 text-xs text-muted-foreground"
                         >
                           {item}
                         </span>
@@ -136,7 +136,7 @@ export default function TeamPage() {
         <div className="container-ultra">
           <Reveal>
             <PremiumCard>
-              <p className="text-xs tracking-[0.24em] text-primary uppercase">團隊信條</p>
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">團隊信條</p>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground md:text-xl">
                 我們把視覺作品視為策略資產。這代表可複製的系統、可量測的成果，
                 以及在高壓時程下依然穩定的品質標準。
@@ -159,7 +159,7 @@ export default function TeamPage() {
             <StaggerReveal className="grid gap-5 md:col-span-3 md:grid-cols-3">
               {principles.map((item) => (
                 <PremiumCard key={item.title}>
-                  <h3 className="text-2xl">{item.title}</h3>
+                  <h3 className="text-xl font-semibold">{item.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{item.body}</p>
                 </PremiumCard>
               ))}

@@ -660,7 +660,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
       <PremiumCard className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.25em] text-primary uppercase">後台管理中心</p>
+            <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">後台管理中心</p>
             <h1 className="mt-2 text-3xl">會員與權限總控台</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               目前登入：{currentUserName}。可在此管理會員權限、會員等級與密碼。
@@ -711,7 +711,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
             <PremiumCard key={item.title} className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">{item.title}</p>
-                <span className="rounded-lg border border-border/70 bg-background/60 p-1.5">
+                <span className="rounded-lg border border-border/40 bg-background/60 p-1.5">
                   <Icon className="size-4 text-primary" />
                 </span>
               </div>
@@ -725,8 +725,8 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
         <PremiumCard className="space-y-3">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <p className="text-xs tracking-[0.24em] text-primary uppercase">會員管理</p>
-              <h2 className="mt-1.5 text-2xl">權限、等級、密碼</h2>
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">會員管理</p>
+              <h2 className="mt-1.5 text-xl font-semibold">權限、等級、密碼</h2>
             </div>
             <p className="text-sm text-muted-foreground">
               顯示 {filteredUsers.length} / {users.length} 位會員
@@ -744,7 +744,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
               />
             </label>
 
-            <label className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2">
+            <label className="flex items-center gap-2 rounded-md border border-border/40 bg-background/40 px-2">
               <Filter className="size-4 text-muted-foreground" />
               <select
                 value={roleFilter}
@@ -760,7 +760,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
               </select>
             </label>
 
-            <label className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2">
+            <label className="flex items-center gap-2 rounded-md border border-border/40 bg-background/40 px-2">
               <Activity className="size-4 text-muted-foreground" />
               <select
                 value={activeFilter}
@@ -773,7 +773,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
               </select>
             </label>
 
-            <label className="flex items-center gap-2 rounded-md border border-border/70 bg-background/40 px-2">
+            <label className="flex items-center gap-2 rounded-md border border-border/40 bg-background/40 px-2">
               <UserCog className="size-4 text-muted-foreground" />
               <select
                 value={membershipFilter}
@@ -810,7 +810,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                         "w-full rounded-xl border px-3.5 py-3 text-left transition-colors",
                         isSelected
                           ? "border-primary/60 bg-primary/10"
-                          : "border-border/70 bg-background/35 hover:bg-secondary/45",
+                          : "border-border/40 bg-background/35 hover:bg-secondary/45",
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -840,7 +840,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                           等級：{MEMBERSHIP_LABEL[user.membershipTier]}
                         </span>
                         {orderedRoles(user.roles).map((role) => (
-                          <span key={`${user.id}-${role}`} className="rounded-full border border-border/70 px-2 py-0.5 text-[11px]">
+                          <span key={`${user.id}-${role}`} className="rounded-full border border-border/40 px-2 py-0.5 text-[11px]">
                             {ROLE_LABEL[role]}
                           </span>
                         ))}
@@ -850,7 +850,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                 })
               )}
             </div>
-            <div className="rounded-xl border border-border/70 bg-background/35 p-3.5">
+            <div className="rounded-xl border border-border/40 bg-background/35 p-3.5">
               {!selectedUser ? (
                 <p className="text-sm text-muted-foreground">請先選取左側會員以編輯設定。</p>
               ) : (
@@ -873,8 +873,8 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                     </p>
                   ) : null}
 
-                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">帳號狀態</p>
+                  <div className="rounded-xl border border-border/40 bg-background/55 p-3">
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">帳號狀態</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span
                         className={cn(
@@ -892,13 +892,13 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">會員等級</p>
+                  <div className="rounded-xl border border-border/40 bg-background/55 p-3">
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">會員等級</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <select
                         value={draftTier}
                         onChange={(event) => setDraftTier(event.target.value as MembershipTier)}
-                        className="h-9 w-full rounded-md border border-border/70 bg-background/70 px-2 text-sm outline-none"
+                        className="h-9 w-full rounded-md border border-border/40 bg-background/70 px-2 text-sm outline-none"
                         disabled={selectedIsProtected}
                       >
                         {MEMBERSHIP_TIERS.map((tier) => (
@@ -914,7 +914,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">角色設定</p>
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">角色設定</p>
                     {ROLE_LEVEL_ORDER_DESC.map((role) => {
                       const checked = draftRoles.includes(role);
                       const disabled = selectedIsProtected || (!isSuperAdmin && role === "super_admin");
@@ -923,7 +923,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                         <label
                           key={role}
                           className={cn(
-                            "flex gap-3 rounded-lg border border-border/70 px-3 py-2",
+                            "flex gap-3 rounded-lg border border-border/40 px-3 py-2",
                             disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-secondary/45",
                           )}
                         >
@@ -944,7 +944,7 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">快速套用</p>
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">快速套用</p>
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => onApplyPreset(["customer"])} disabled={selectedIsProtected}>
                         一般會員
@@ -978,13 +978,13 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">路由權限預覽</p>
+                  <div className="rounded-xl border border-border/40 bg-background/55 p-3">
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">路由權限預覽</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-3">
                       {ACCESS_TEST_ROUTES.map((path) => {
                         const allowed = canAccessDashboardPath(accessPreviewRoles, path);
                         return (
-                          <div key={path} className="rounded-lg border border-border/70 bg-background/70 px-2.5 py-2">
+                          <div key={path} className="rounded-lg border border-border/40 bg-background/70 px-2.5 py-2">
                             <p className="text-xs font-medium">{path}</p>
                             <p
                               className={cn(
@@ -1002,8 +1002,8 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/70 bg-background/55 p-3">
-                    <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">管理員重設密碼</p>
+                  <div className="rounded-xl border border-border/40 bg-background/55 p-3">
+                    <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">管理員重設密碼</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
                       <Input
                         value={resetPassword}
@@ -1019,8 +1019,8 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
                   </div>
 
                   {selectedIsSelf ? (
-                    <div className="rounded-xl border border-border/70 bg-background/55 p-3">
-                      <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">變更自己的密碼</p>
+                    <div className="rounded-xl border border-border/40 bg-background/55 p-3">
+                      <p className="text-[0.7rem] font-medium tracking-[0.14em] text-muted-foreground uppercase">變更自己的密碼</p>
                       <div className="mt-2 grid gap-2">
                         <Input
                           value={selfCurrentPassword}
@@ -1072,15 +1072,15 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
           <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs tracking-[0.24em] text-primary uppercase">角色階層</p>
-                <h2 className="mt-1.5 text-2xl">權限分級</h2>
+                <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">角色階層</p>
+                <h2 className="mt-1.5 text-xl font-semibold">權限分級</h2>
               </div>
               <LockKeyhole className="size-5 text-primary" />
             </div>
 
             <div className="space-y-2">
               {ROLE_LEVEL_ORDER_DESC.map((role) => (
-                <div key={role} className="rounded-lg border border-border/70 bg-background/35 px-3 py-2">
+                <div key={role} className="rounded-lg border border-border/40 bg-background/35 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">
                       L{ROLE_POLICY[role].level} {ROLE_LABEL[role]}
@@ -1098,8 +1098,8 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
           <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs tracking-[0.24em] text-primary uppercase">專案狀態</p>
-                <h2 className="mt-1.5 text-2xl">流程分布</h2>
+                <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">專案狀態</p>
+                <h2 className="mt-1.5 text-xl font-semibold">流程分布</h2>
               </div>
               <ShieldCheck className="size-5 text-primary" />
             </div>
@@ -1129,19 +1129,19 @@ export function AdminDashboard({ currentUserId, currentUserName, currentUserRole
           <PremiumCard className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs tracking-[0.24em] text-primary uppercase">稽核紀錄</p>
-                <h2 className="mt-1.5 text-2xl">最近 200 筆</h2>
+                <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">稽核紀錄</p>
+                <h2 className="mt-1.5 text-xl font-semibold">最近 200 筆</h2>
               </div>
               <Activity className="size-5 text-primary" />
             </div>
 
-            <div className="max-h-[21rem] overflow-y-auto rounded-xl border border-border/70 bg-background/35">
+            <div className="max-h-[21rem] overflow-y-auto rounded-xl border border-border/40 bg-background/35">
               {isInitialLoading ? (
                 <p className="p-4 text-sm text-muted-foreground">讀取中...</p>
               ) : logs.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">目前沒有稽核紀錄。</p>
               ) : (
-                <div className="divide-y divide-border/70">
+                <div className="divide-y divide-border/40">
                   {logs.map((log) => (
                     <article key={log.id} className="space-y-1 px-4 py-3 text-sm">
                       <p className="font-medium">{log.action}</p>

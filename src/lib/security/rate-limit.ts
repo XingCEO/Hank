@@ -8,10 +8,7 @@ declare global {
 }
 
 const buckets = global.__studioRateLimitBuckets ?? new Map<string, RateLimitBucket>();
-
-if (process.env.NODE_ENV !== "production") {
-  global.__studioRateLimitBuckets = buckets;
-}
+global.__studioRateLimitBuckets = buckets;
 
 type ConsumeRateLimitParams = {
   key: string;

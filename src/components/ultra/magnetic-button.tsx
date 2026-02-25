@@ -38,8 +38,8 @@ export function MagneticButton({ href, children, className }: MagneticButtonProp
         onMouseLeave={handleReset}
         onBlur={handleReset}
         className={cn(
-          "focus-ring inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-medium tracking-[0.18em] uppercase transition-colors",
-          "border-primary/40 bg-primary text-primary-foreground hover:border-primary hover:bg-primary/90",
+          "focus-ring inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-[0.82rem] font-medium tracking-[0.04em] transition-colors",
+          "bg-foreground text-background hover:bg-foreground/85",
           className,
         )}
       >

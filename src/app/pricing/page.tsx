@@ -69,7 +69,7 @@ export default function PricingPage() {
           </Reveal>
 
           <Reveal delay={0.08}>
-            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/30 p-3">
+            <div className="overflow-hidden rounded-xl border border-border/40 bg-white p-3">
               <div className="relative overflow-hidden rounded-xl">
                 <SafeImage
                   src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1800&q=80"
@@ -96,19 +96,19 @@ export default function PricingPage() {
           <div className="mb-8">
             <AccentDivider />
           </div>
-          <StaggerReveal className="grid gap-5 md:grid-cols-3">
+          <StaggerReveal className="grid gap-4 md:grid-cols-3">
             {tiers.map((tier) => (
               <PremiumCard
                 key={tier.name}
-                className={tier.featured ? "border-primary/50 shadow-[var(--shadow-accent)]" : ""}
+                className={tier.featured ? "border-foreground/20 shadow-[var(--shadow-card)]" : ""}
               >
-                <p className="text-xs tracking-[0.22em] text-primary uppercase">{tier.featured ? "最多客戶選擇" : "方案"}</p>
-                <h3 className="mt-3 text-2xl">{tier.name}</h3>
-                <p className="mt-2 text-3xl accent-text">{tier.price}</p>
-                <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">{tier.featured ? "最多客戶選擇" : "方案"}</p>
+                <h3 className="mt-2 text-xl font-semibold">{tier.name}</h3>
+                <p className="mt-2 text-2xl font-semibold">{tier.price}</p>
+                <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                   {tier.points.map((point) => (
                     <li key={point} className="flex gap-2">
-                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary" />
+                      <span className="mt-2 h-1 w-1 rounded-full bg-foreground/30" />
                       <span>{point}</span>
                     </li>
                   ))}
@@ -123,12 +123,12 @@ export default function PricingPage() {
         <div className="container-ultra grid gap-5 lg:grid-cols-[1fr_1fr]">
           <Reveal>
             <PremiumCard className="h-full">
-              <p className="text-xs tracking-[0.22em] text-primary uppercase">付款條件</p>
-              <h3 className="mt-3 text-2xl">商業等級帳務政策</h3>
-              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">付款條件</p>
+              <h3 className="mt-2 text-lg font-semibold">商業等級帳務政策</h3>
+              <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
                 {paymentPolicy.map((item) => (
                   <li key={item} className="flex gap-3">
-                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="mt-2 h-1 w-1 rounded-full bg-foreground/30" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -138,13 +138,13 @@ export default function PricingPage() {
 
           <Reveal delay={0.08}>
             <PremiumCard className="h-full">
-              <p className="text-xs tracking-[0.22em] text-primary uppercase">常見問題</p>
-              <h3 className="mt-3 text-2xl">方案與採購說明</h3>
-              <div className="mt-5 space-y-4">
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">常見問題</p>
+              <h3 className="mt-2 text-lg font-semibold">方案與採購說明</h3>
+              <div className="mt-4 space-y-3">
                 {faqs.map((item) => (
-                  <div key={item.q} className="rounded-xl border border-border/70 bg-secondary/20 p-4">
+                  <div key={item.q} className="rounded-lg border border-border/30 bg-secondary/30 p-3">
                     <p className="text-sm font-medium">{item.q}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{item.a}</p>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{item.a}</p>
                   </div>
                 ))}
               </div>

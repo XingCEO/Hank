@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         <div className="container-ultra grid gap-5 md:grid-cols-2">
           {policyRows.map((item) => (
             <PremiumCard key={item.title}>
-              <h3 className="text-2xl">{item.title}</h3>
+              <h3 className="text-xl font-semibold">{item.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
             </PremiumCard>
           ))}

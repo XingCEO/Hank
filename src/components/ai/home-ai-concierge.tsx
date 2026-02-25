@@ -272,27 +272,27 @@ export function HomeAiConcierge() {
       <Button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="fixed right-5 bottom-5 z-50 h-11 rounded-full px-4 shadow-[var(--shadow-accent)]"
+        className="fixed right-5 bottom-5 z-50 h-10 rounded-lg border-0 bg-foreground px-4 text-background shadow-[var(--shadow-card)] hover:bg-foreground/85"
       >
         {open ? <X className="size-4" /> : <MessageCircle className="size-4" />}
-        AI 客服
+        <span className="text-[0.82rem]">AI 客服</span>
       </Button>
 
       <aside
         className={cn(
-          "fixed right-5 bottom-20 z-50 w-[min(92vw,390px)] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-elevated)] transition-all",
-          open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
+          "fixed right-5 bottom-[4.5rem] z-50 w-[min(92vw,380px)] overflow-hidden rounded-xl border border-border/50 bg-white shadow-[var(--shadow-elevated)] transition-all",
+          open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         )}
         aria-hidden={!open}
       >
-        <header className="flex items-center justify-between border-b border-border/70 bg-background/70 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="rounded-lg border border-border/70 bg-background/70 p-1.5">
-              <Bot className="size-4 text-primary" />
+        <header className="flex items-center justify-between border-b border-border/40 bg-secondary/30 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-foreground/[0.07]">
+              <Bot className="size-3.5 text-foreground/60" />
             </span>
             <div>
-              <p className="text-sm font-medium">AI 客服（Beta）</p>
-              <p className="text-xs text-muted-foreground">先回答常見問題，快速導流到正確頁面</p>
+              <p className="text-[0.82rem] font-medium text-foreground">AI 客服</p>
+              <p className="text-[0.68rem] text-muted-foreground">常見問題與快速導流</p>
             </div>
           </div>
           <button
@@ -314,25 +314,25 @@ export function HomeAiConcierge() {
             <article
               key={msg.id}
               className={cn(
-                "rounded-xl border px-3 py-2 text-sm",
+                "rounded-lg px-3 py-2 text-[0.82rem]",
                 msg.role === "assistant"
-                  ? "border-border/70 bg-background/70"
-                  : "ml-8 border-primary/30 bg-primary/10",
+                  ? "border border-border/30 bg-secondary/30"
+                  : "ml-8 bg-foreground/[0.06]",
               )}
             >
               <p className="whitespace-pre-wrap leading-relaxed">
                 {msg.content}
                 {msg.id === typingMessageId ? (
-                  <span className="ml-1 inline-block h-4 w-[2px] animate-pulse bg-foreground/70 align-middle" />
+                  <span className="ml-1 inline-block h-3.5 w-[2px] animate-pulse bg-foreground/50 align-middle" />
                 ) : null}
               </p>
               {msg.links && msg.links.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {msg.links.map((link) => (
                     <Link
                       key={`${msg.id}-${link.href}`}
                       href={link.href}
-                      className="rounded-full border border-border/70 px-2.5 py-1 text-xs hover:border-primary/60"
+                      className="rounded-md border border-border/40 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       onClick={() => setOpen(false)}
                     >
                       {link.label}
@@ -343,27 +343,27 @@ export function HomeAiConcierge() {
             </article>
           ))}
           {thinking ? (
-            <article className="rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm">
+            <article className="rounded-lg border border-border/30 bg-secondary/30 px-3 py-2 text-[0.82rem]">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span>AI 正在整理回覆</span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
-                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
-                  <span className="inline-block size-1.5 animate-bounce rounded-full bg-current" />
+                <span>思考中</span>
+                <span className="inline-flex items-center gap-0.5">
+                  <span className="inline-block size-1 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+                  <span className="inline-block size-1 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+                  <span className="inline-block size-1 animate-bounce rounded-full bg-current" />
                 </span>
               </div>
             </article>
           ) : null}
         </div>
 
-        <div className="border-t border-border/70 px-3 py-3">
-          <div className="mb-2 flex flex-wrap gap-2">
+        <div className="border-t border-border/40 px-3 py-2.5">
+          <div className="mb-2 flex flex-wrap gap-1.5">
             {QUICK_ASKS.map((q) => (
               <button
                 key={q}
                 type="button"
                 onClick={() => void ask(q)}
-                className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
+                className="rounded-md border border-border/40 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 disabled={sending}
               >
                 {q}
@@ -385,9 +385,10 @@ export function HomeAiConcierge() {
               placeholder="輸入你的問題..."
               disabled={sending}
               maxLength={300}
+              className="h-8 text-sm"
             />
-            <Button type="submit" size="icon" disabled={!canSend}>
-              <Send className="size-4" />
+            <Button type="submit" size="icon" disabled={!canSend} className="size-8 shrink-0 rounded-lg bg-foreground text-background hover:bg-foreground/85">
+              <Send className="size-3.5" />
             </Button>
           </form>
         </div>

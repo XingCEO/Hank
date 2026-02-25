@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessProject, hasRole } from "@/lib/auth/authorization";
 import { requireSession } from "@/lib/auth/request";
-import { ASSET_TYPES } from "@/lib/auth/constants";
+import { ASSET_TYPES, isAllowedAssetMime } from "@/lib/auth/constants";
 import { createAuditLog } from "@/lib/audit";
 import { getDefaultBucket, isStorageConfigured } from "@/lib/storage/s3";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
@@ -124,6 +124,13 @@ export async function POST(req: Request, context: RouteContext) {
 
     if (!body.objectKey.startsWith(`projects/${id}/`) || body.objectKey.includes("..")) {
       return NextResponse.json({ ok: false, message: "Invalid object key path." }, { status: 400 });
+    }
+
+    if (!isAllowedAssetMime(body.mime)) {
+      return NextResponse.json(
+        { ok: false, message: "不支援的檔案格式。僅接受圖片、影片與 PDF。" },
+        { status: 400 },
+      );
     }
 
     const asset = await prisma.asset.create({

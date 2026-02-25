@@ -17,10 +17,10 @@ export function SectionHeading({
   className?: string;
 }) {
   return (
-    <header className={cn("max-w-3xl space-y-[var(--space-phi-1)]", className)}>
-      <p className="text-xs font-medium tracking-[0.3em] text-primary uppercase">{kicker}</p>
-      <h2 className="text-4xl leading-tight md:text-5xl">{title}</h2>
-      {copy ? <p className="text-base leading-relaxed text-muted-foreground md:text-lg">{copy}</p> : null}
+    <header className={cn("max-w-2xl space-y-3", className)}>
+      <p className="text-[0.7rem] font-medium tracking-[0.22em] text-foreground/50 uppercase">{kicker}</p>
+      <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] leading-tight font-semibold tracking-tight">{title}</h2>
+      {copy ? <p className="text-base leading-relaxed text-muted-foreground">{copy}</p> : null}
     </header>
   );
 }
@@ -29,8 +29,8 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
   return (
     <article
       className={cn(
-        "clean-surface clean-border rounded-[1.45rem] p-[var(--space-phi-2)] md:p-[var(--space-phi-3)]",
-        "transition-transform duration-500 ease-[var(--ease-smooth)] hover:-translate-y-1 hover:shadow-[var(--shadow-accent)]",
+        "rounded-xl border border-border/40 bg-white p-5 md:p-6",
+        "transition-all duration-300 ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]",
         className,
       )}
     >
@@ -40,5 +40,5 @@ export function PremiumCard({ children, className }: { children: ReactNode; clas
 }
 
 export function AccentDivider() {
-  return <div className="h-px w-28 bg-gradient-to-r from-transparent via-primary/80 to-transparent" aria-hidden="true" />;
+  return <div className="h-px w-16 bg-foreground/15" aria-hidden="true" />;
 }

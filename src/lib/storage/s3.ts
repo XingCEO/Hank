@@ -39,15 +39,18 @@ export async function createUploadUrl({
   bucket,
   objectKey,
   contentType,
+  maxContentLength,
 }: {
   bucket: string;
   objectKey: string;
   contentType: string;
+  maxContentLength?: number;
 }) {
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: objectKey,
     ContentType: contentType,
+    ...(maxContentLength ? { ContentLength: maxContentLength } : {}),
   });
 
   return getSignedUrl(getS3Client(), command, { expiresIn: 60 * 10 });

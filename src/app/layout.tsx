@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, Noto_Sans_TC } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/ultra/smooth-scroll-provider";
 import "./globals.css";
 
@@ -12,6 +12,12 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+});
+
+const notoSansTC = Noto_Sans_TC({
+  variable: "--font-noto-tc",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 const siteUrlCandidate =
@@ -58,7 +64,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-Hant">
-      <body className={`${inter.variable} ${jakarta.variable}`}>
+      <body className={`${inter.variable} ${jakarta.variable} ${notoSansTC.variable}`}>
         <SmoothScrollProvider>
           {children}
         </SmoothScrollProvider>

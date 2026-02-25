@@ -8,6 +8,7 @@ export type AuthSession = {
   email: string;
   name: string;
   roles: RoleKey[];
+  sessionVersion: number;
 };
 
 type SessionPayload = {
@@ -15,10 +16,12 @@ type SessionPayload = {
   email: string;
   name: string;
   roles: RoleKey[];
+  sv: number;
 };
 
 type VerifiedToken = {
   userId: string;
+  sessionVersion: number;
 };
 
 type CookieReader = {
@@ -28,11 +31,13 @@ type CookieReader = {
 function getJwtSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
 
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("AUTH_SECRET is required in production.");
+  if (!secret) {
+    throw new Error(
+      "AUTH_SECRET is required. Set AUTH_SECRET in your .env file (even in development).",
+    );
   }
 
-  return new TextEncoder().encode(secret ?? "local-dev-secret-change-me");
+  return new TextEncoder().encode(secret);
 }
 
 export async function createSessionToken(session: AuthSession): Promise<string> {
@@ -41,6 +46,7 @@ export async function createSessionToken(session: AuthSession): Promise<string> 
     email: session.email,
     name: session.name,
     roles: session.roles,
+    sv: session.sessionVersion,
   };
 
   return new SignJWT(payload)
@@ -59,6 +65,7 @@ export async function verifySessionToken(token: string): Promise<VerifiedToken |
 
     return {
       userId: payload.sub,
+      sessionVersion: typeof payload.sv === "number" ? payload.sv : 0,
     };
   } catch {
     return null;
@@ -84,6 +91,7 @@ export async function getSessionFromCookies(cookieStore: CookieReader): Promise<
       email: true,
       name: true,
       isActive: true,
+      sessionVersion: true,
       roles: {
         include: {
           role: {
@@ -100,6 +108,10 @@ export async function getSessionFromCookies(cookieStore: CookieReader): Promise<
     return null;
   }
 
+  if (user.sessionVersion !== verified.sessionVersion) {
+    return null;
+  }
+
   const roles = normalizeRoleKeys(user.roles.map((item) => item.role.key));
   if (roles.length === 0) {
     return null;
@@ -110,6 +122,7 @@ export async function getSessionFromCookies(cookieStore: CookieReader): Promise<
     email: user.email,
     name: user.name,
     roles,
+    sessionVersion: user.sessionVersion,
   };
 }
 

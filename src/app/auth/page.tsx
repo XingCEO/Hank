@@ -34,7 +34,7 @@ const fieldVariants = {
 };
 
 const inputClass =
-  "focus-ring h-11 w-full rounded-xl border border-border/70 bg-background/30 px-3 text-sm transition-colors focus:border-primary/60";
+  "focus-ring h-10 w-full rounded-lg border border-border/50 bg-white px-3 text-sm transition-colors focus:border-foreground/30";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -107,10 +107,10 @@ export default function AuthPage() {
           <motion.div
             layout
             transition={{ layout: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } }}
-            className="clean-surface clean-border overflow-hidden rounded-2xl p-8"
+            className="overflow-hidden rounded-xl border border-border/40 bg-white p-8 shadow-[var(--shadow-card)]"
           >
             {/* ── Pill toggle ── */}
-            <div className="relative mx-auto flex w-fit rounded-full border border-border/70 bg-secondary/30 p-1">
+            <div className="relative mx-auto flex w-fit rounded-lg border border-border/40 bg-secondary/40 p-1">
               {(["login", "register"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -251,7 +251,7 @@ export default function AuthPage() {
                 disabled={loading}
                 whileHover={{ scale: 1.015 }}
                 whileTap={{ scale: 0.985 }}
-                className="focus-ring mt-6 h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-50"
+                className="focus-ring mt-6 h-10 w-full rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity disabled:opacity-50"
               >
                 <AnimatePresence mode="wait">
                   <motion.span
@@ -278,7 +278,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => switchMode(mode === "login" ? "register" : "login")}
-                className="focus-ring ml-1 font-medium text-primary hover:underline"
+                className="focus-ring ml-1 font-medium text-foreground hover:underline"
               >
                 {mode === "login" ? "立即註冊" : "返回登入"}
               </button>

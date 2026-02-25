@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       select: { id: true },
     });
     if (existed) {
-      return NextResponse.json({ ok: false, message: "Email already registered." }, { status: 409 });
+      return NextResponse.json({ ok: false, message: "Registration could not be completed. If you already have an account, try logging in." }, { status: 409 });
     }
 
     await ensureBaseRoles(prisma);
@@ -83,6 +83,7 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       roles: normalizeRoleKeys(user.roles.map((item: { role: { key: string } }) => item.role.key)),
+      sessionVersion: 0,
     };
     if (session.roles.length === 0) {
       return NextResponse.json({ ok: false, message: "Role assignment failed." }, { status: 500 });
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: error.issues[0]?.message ?? "Invalid registration payload." }, { status: 400 });
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return NextResponse.json({ ok: false, message: "Email already registered." }, { status: 409 });
+      return NextResponse.json({ ok: false, message: "Registration could not be completed. If you already have an account, try logging in." }, { status: 409 });
     }
     return NextResponse.json({ ok: false, message: "Registration failed." }, { status: 500 });
   }

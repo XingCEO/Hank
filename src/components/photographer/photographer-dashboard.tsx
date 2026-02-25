@@ -212,7 +212,7 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
       <PremiumCard className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.22em] text-primary uppercase">攝影師工作台</p>
+            <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">攝影師工作台</p>
             <h1 className="mt-2 text-3xl">執行面板</h1>
             <p className="mt-2 text-sm text-muted-foreground">登入者：{sessionName}（{sessionRoles.join(" / ")}）</p>
           </div>
@@ -240,17 +240,17 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
 
       <div className="grid gap-5 md:grid-cols-3">
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">指派案件</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">指派案件</p>
           <p className="mt-2 text-sm text-muted-foreground">可見案件總數</p>
           <p className="mt-3 text-3xl">{projects.length}</p>
         </PremiumCard>
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">進行中</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">進行中</p>
           <p className="mt-2 text-sm text-muted-foreground">尚未交付 / 結案</p>
           <p className="mt-3 text-3xl">{openCount}</p>
         </PremiumCard>
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">狀態更新</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">狀態更新</p>
           <p className="mt-2 text-sm text-muted-foreground">可直接呼叫 `PATCH /api/projects/:id/status`</p>
           <p className="mt-3 text-sm text-muted-foreground">每次更新都會寫入狀態紀錄與審計紀錄。</p>
         </PremiumCard>
@@ -275,7 +275,7 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
               <PremiumCard key={project.id} className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-2xl">{project.title}</h2>
+                    <h2 className="text-xl font-semibold">{project.title}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {project.code} | 客戶：{project.client.name}（{project.client.email}）
                     </p>
@@ -294,7 +294,7 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
                     <select
                       value={draftStatus}
                       onChange={(event) => onStatusChange(project.id, event.target.value as ProjectStatusKey)}
-                      className="h-9 w-full rounded-md border border-border/70 bg-background/30 px-2 text-sm"
+                      className="h-9 w-full rounded-md border border-border/40 bg-background/30 px-2 text-sm"
                     >
                       {PROJECT_STATUSES.map((status) => (
                         <option key={status} value={status}>
@@ -325,7 +325,7 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
 
                 {details ? (
                   <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-xl border border-border/70 bg-background/30 p-3">
+                    <div className="rounded-xl border border-border/40 bg-background/30 p-3">
                       <p className="text-sm font-medium">最新狀態紀錄</p>
                       <div className="mt-2 space-y-2">
                         {details.statusLogs.length === 0 ? (
@@ -341,7 +341,7 @@ export function PhotographerDashboard({ sessionName, sessionRoles }: Photographe
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-border/70 bg-background/30 p-3">
+                    <div className="rounded-xl border border-border/40 bg-background/30 p-3">
                       <p className="text-sm font-medium">最近素材</p>
                       <div className="mt-2 space-y-2">
                         {details.assets.length === 0 ? (

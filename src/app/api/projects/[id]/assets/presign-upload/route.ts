@@ -6,7 +6,9 @@ import { ASSET_TYPES } from "@/lib/auth/constants";
 import { prisma } from "@/lib/prisma";
 import { buildAssetObjectKey, createUploadUrl, getDefaultBucket, isStorageConfigured } from "@/lib/storage/s3";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
-import { guardSameOrigin } from "@/lib/security/request-guard";
+import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
+import { createAuditLog } from "@/lib/audit";
+import { isAllowedAssetMime } from "@/lib/auth/constants";
 
 const presignUploadSchema = z.object({
   fileName: z.string().min(1).max(255),
@@ -66,12 +68,31 @@ export async function POST(req: Request, context: RouteContext) {
 
   try {
     const body = presignUploadSchema.parse(await req.json());
+
+    if (!isAllowedAssetMime(body.contentType)) {
+      return NextResponse.json(
+        { ok: false, message: "不支援的檔案格式。僅接受圖片、影片與 PDF。" },
+        { status: 400 },
+      );
+    }
+
     const bucket = getDefaultBucket();
     const objectKey = buildAssetObjectKey(id, body.fileName);
+    const maxContentLength = 500 * 1024 * 1024; // 500MB
     const uploadUrl = await createUploadUrl({
       bucket,
       objectKey,
       contentType: body.contentType,
+      maxContentLength,
+    });
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action: "asset.presign-upload",
+      resourceType: "project",
+      resourceId: id,
+      payload: { fileName: body.fileName, contentType: body.contentType },
+      ip: getClientIpFromRequest(req),
     });
 
     return NextResponse.json({

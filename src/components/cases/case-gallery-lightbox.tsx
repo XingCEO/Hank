@@ -57,7 +57,7 @@ export function CaseGalleryLightbox({ images, title }: CaseGalleryLightboxProps)
             key={image}
             type="button"
             onClick={() => setActiveIndex(index)}
-            className="group overflow-hidden rounded-2xl border border-border/70 bg-card/30 p-3 text-left"
+            className="group overflow-hidden rounded-xl border border-border/40 bg-white/70 p-3 text-left"
           >
             <div className="relative overflow-hidden rounded-xl">
               <SafeImage
@@ -103,7 +103,7 @@ export function CaseGalleryLightbox({ images, title }: CaseGalleryLightboxProps)
           </button>
 
           <div className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
-            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/30 p-3">
+            <div className="overflow-hidden rounded-xl border border-border/40 bg-white/70 p-3">
               <div className="relative overflow-hidden rounded-xl">
                 <SafeImage
                   src={current}

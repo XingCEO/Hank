@@ -33,9 +33,11 @@ export function guardSameOrigin(request: Request): NextResponse | null {
   }
 
   const origin = request.headers.get("origin");
-  // Non-browser clients often omit Origin; allow those requests.
   if (!origin) {
-    return null;
+    return NextResponse.json(
+      { ok: false, message: "Missing Origin header." },
+      { status: 403 },
+    );
   }
 
   const normalizedOrigin = normalizeOrigin(origin);

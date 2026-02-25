@@ -234,7 +234,7 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
       <PremiumCard className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.22em] text-primary uppercase">會員中心</p>
+            <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">會員中心</p>
             <h1 className="mt-2 text-3xl">歡迎回來，{sessionName}</h1>
             <p className="mt-2 text-sm text-muted-foreground">你的目前角色：{sessionRoles.join(" / ")}</p>
           </div>
@@ -257,12 +257,12 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
 
       <div className="grid gap-5 md:grid-cols-3">
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">概況</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">概況</p>
           <p className="mt-2 text-sm text-muted-foreground">可查看案件總數</p>
           <p className="mt-3 text-3xl">{projects.length}</p>
         </PremiumCard>
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">最新狀態</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">最新狀態</p>
           <p className="mt-2 text-sm text-muted-foreground">案件狀態分布</p>
           <div className="mt-3 space-y-1 text-sm">
             {statusSummary.length === 0 ? (
@@ -278,7 +278,7 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
           </div>
         </PremiumCard>
         <PremiumCard>
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">資料刷新</p>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">資料刷新</p>
           <p className="mt-2 text-sm text-muted-foreground">即時讀取目前可見權限內案件</p>
           <p className="mt-3 text-sm text-muted-foreground">此頁資料來源：`GET /api/projects`、`GET /api/projects/:id`</p>
         </PremiumCard>
@@ -286,8 +286,8 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
         <PremiumCard className="space-y-3">
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">我的案件</p>
-          <h2 className="text-2xl">可存取清單</h2>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">我的案件</p>
+          <h2 className="text-xl font-semibold">可存取清單</h2>
           <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
             {isLoading ? (
               <p className="text-sm text-muted-foreground">載入案件中...</p>
@@ -302,12 +302,12 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
                   className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
                     selectedProjectId === project.id
                       ? "border-primary/60 bg-primary/10"
-                      : "border-border/70 bg-background/30 hover:bg-secondary/40"
+                      : "border-border/40 bg-background/30 hover:bg-secondary/40"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium">{project.title}</p>
-                    <span className="rounded-full border border-border/70 px-2 py-0.5 text-xs">{project.status}</span>
+                    <span className="rounded-full border border-border/40 px-2 py-0.5 text-xs">{project.status}</span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {project.code} | 客戶：{project.client.name}
@@ -320,8 +320,8 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
         </PremiumCard>
 
         <PremiumCard className="space-y-3">
-          <p className="text-xs tracking-[0.22em] text-primary uppercase">案件詳情</p>
-          <h2 className="text-2xl">選取後顯示</h2>
+          <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">案件詳情</p>
+          <h2 className="text-xl font-semibold">選取後顯示</h2>
 
           {isLoadingDetails ? (
             <p className="text-sm text-muted-foreground">載入案件詳情中...</p>
@@ -329,7 +329,7 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
             <p className="text-sm text-muted-foreground">請先選擇案件。</p>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-xl border border-border/70 bg-background/30 p-3">
+              <div className="rounded-xl border border-border/40 bg-background/30 p-3">
                 <p className="font-medium">{details.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {details.code} | 狀態：{details.status}
@@ -339,7 +339,7 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
                 </p>
               </div>
 
-              <div className="rounded-xl border border-border/70 bg-background/30 p-3">
+              <div className="rounded-xl border border-border/40 bg-background/30 p-3">
                 <p className="text-sm font-medium">最新狀態紀錄</p>
                 <div className="mt-2 space-y-2">
                   {details.statusLogs.length === 0 ? (
@@ -355,7 +355,7 @@ export function PortalDashboard({ sessionName, sessionRoles }: PortalDashboardPr
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border/70 bg-background/30 p-3">
+              <div className="rounded-xl border border-border/40 bg-background/30 p-3">
                 <p className="text-sm font-medium">可下載素材（最新 5 筆）</p>
                 <div className="mt-2 space-y-2">
                   {details.assets.length === 0 ? (

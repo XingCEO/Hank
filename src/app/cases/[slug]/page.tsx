@@ -43,14 +43,14 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
         <div className="container-ultra space-y-8">
           <Reveal>
             <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-medium tracking-[0.28em] text-primary uppercase">案例研究 / {item.category}</p>
-              <h1 className="text-4xl leading-tight md:text-6xl">{item.name}</h1>
-              <p className="text-base leading-relaxed text-muted-foreground md:text-lg">{item.subtitle}</p>
+              <p className="text-[0.7rem] font-medium tracking-[0.18em] text-foreground/50 uppercase">案例研究 / {item.category}</p>
+              <h1 className="text-[clamp(2rem,4.5vw,3.2rem)] leading-tight font-semibold tracking-tight">{item.name}</h1>
+              <p className="text-base leading-relaxed text-muted-foreground">{item.subtitle}</p>
             </div>
           </Reveal>
 
           <Reveal delay={0.08}>
-            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/30">
+            <div className="overflow-hidden rounded-xl border border-border/40 bg-white">
               <div className="relative">
                 <SafeImage
                   src={item.heroImage}
@@ -75,12 +75,12 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
         <div className="container-ultra grid gap-5 lg:grid-cols-2">
           <Reveal>
             <PremiumCard className="h-full">
-              <p className="text-xs tracking-[0.24em] text-primary uppercase">製作範疇</p>
-              <h2 className="mt-3 text-2xl md:text-3xl">製作範疇</h2>
-              <ul className="mt-5 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">製作範疇</p>
+              <h2 className="mt-2 text-xl font-semibold">製作範疇</h2>
+              <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
                 {item.scope.map((row) => (
                   <li key={row} className="flex gap-3">
-                    <span className="mt-[0.55rem] block h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="mt-[0.55rem] block h-1 w-1 rounded-full bg-foreground/30" />
                     <span>{row}</span>
                   </li>
                 ))}
@@ -90,12 +90,12 @@ export default async function CaseDetailPage({ params }: CasePageProps) {
 
           <Reveal delay={0.08}>
             <PremiumCard className="h-full">
-              <p className="text-xs tracking-[0.24em] text-primary uppercase">專案成果</p>
-              <h2 className="mt-3 text-2xl md:text-3xl">可量化成果</h2>
-              <ul className="mt-5 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+              <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">專案成果</p>
+              <h2 className="mt-2 text-xl font-semibold">可量化成果</h2>
+              <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
                 {item.outcomes.map((row) => (
                   <li key={row} className="flex gap-3">
-                    <span className="mt-[0.55rem] block h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="mt-[0.55rem] block h-1 w-1 rounded-full bg-foreground/30" />
                     <span>{row}</span>
                   </li>
                 ))}

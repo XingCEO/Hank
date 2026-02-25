@@ -93,7 +93,7 @@ export default function ProcessPage() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/30 p-3">
+            <div className="overflow-hidden rounded-xl border border-border/40 bg-white p-3">
               <div className="relative overflow-hidden rounded-xl">
                 <SafeImage
                   src="https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1800&q=80"
@@ -105,7 +105,7 @@ export default function ProcessPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute right-5 bottom-5 left-5">
                   <p className="text-xs tracking-[0.22em] text-white/80 uppercase">Process Blueprint</p>
-                  <p className="mt-2 text-sm text-foreground/90 md:text-base">
+                  <p className="mt-2 text-sm text-white/80 md:text-base">
                     從需求到交付全流程可視化管理，確保每次專案都維持同等品質。
                   </p>
                 </div>
@@ -129,17 +129,17 @@ export default function ProcessPage() {
                 <PremiumCard key={item.step} className="h-full">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs tracking-[0.24em] text-primary uppercase">階段 {item.step}</p>
-                      <h3 className="mt-2 text-2xl">{item.title}</h3>
+                      <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">階段 {item.step}</p>
+                      <h3 className="mt-1.5 text-lg font-semibold">{item.title}</h3>
                     </div>
-                    <span className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs tracking-[0.18em] text-primary uppercase">
+                    <span className="rounded-lg border border-foreground/10 bg-secondary/40 px-2.5 py-1 text-xs font-medium text-foreground/50">
                       SOP {item.step}
                     </span>
                   </div>
 
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{item.body}</p>
 
-                  <div className="mt-5 overflow-hidden rounded-xl border border-border/70 bg-background/35 p-2">
+                  <div className="mt-4 overflow-hidden rounded-lg border border-border/30 bg-secondary/20 p-2">
                     <SafeImage
                       src={detail.visual}
                       alt={detail.visualAlt}
@@ -149,7 +149,7 @@ export default function ProcessPage() {
                     />
                   </div>
 
-                  <div className="mt-5 grid gap-3 rounded-xl border border-border/70 bg-secondary/20 p-4 md:grid-cols-3">
+                  <div className="mt-4 grid gap-3 rounded-lg border border-border/30 bg-secondary/20 p-3 md:grid-cols-3">
                     <div>
                       <p className="text-[0.68rem] tracking-[0.2em] text-muted-foreground uppercase">負責人</p>
                       <p className="mt-1 text-sm">{detail.owner}</p>
@@ -176,8 +176,8 @@ export default function ProcessPage() {
             <PremiumCard>
               <div className="flex flex-wrap items-center justify-between gap-5">
                 <div>
-                  <p className="text-xs tracking-[0.24em] text-primary uppercase">下一步</p>
-                  <h3 className="mt-2 text-2xl">想看你的專案如何套用這套 SOP？</h3>
+                  <p className="text-[0.7rem] font-medium tracking-[0.14em] text-foreground/50 uppercase">下一步</p>
+                  <h3 className="mt-1.5 text-xl font-semibold">想看你的專案如何套用這套 SOP？</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     我們可在諮詢中直接帶你走一次需求拆解與時程規劃，24 小時內提供初版提案。
                   </p>

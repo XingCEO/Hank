@@ -61,7 +61,7 @@ export default function MaterialsPage() {
           {materialItems.map((item, index) => (
             <Reveal key={item.file} delay={index * 0.05}>
               <PremiumCard className="h-full">
-                <div className="overflow-hidden rounded-xl border border-border/70 bg-background/40 p-2">
+                <div className="overflow-hidden rounded-lg border border-border/30 bg-secondary/30 p-2">
                   <SafeImage
                     src={item.file}
                     alt={item.name}
@@ -70,13 +70,13 @@ export default function MaterialsPage() {
                     className="aspect-[4/3] w-full rounded-lg object-cover"
                   />
                 </div>
-                <h3 className="mt-5 text-2xl">{item.name}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">尺寸：{item.size}</p>
-                <div className="mt-5">
+                <h3 className="mt-4 text-lg font-semibold">{item.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">尺寸：{item.size}</p>
+                <div className="mt-4">
                   <Link
                     href={item.file}
                     download
-                    className="focus-ring inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-5 py-2 text-xs font-medium tracking-[0.14em] text-primary-foreground uppercase transition-colors hover:border-primary hover:bg-primary/90"
+                    className="focus-ring inline-flex items-center justify-center rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background transition-colors hover:bg-foreground/85"
                   >
                     下載素材
                   </Link>

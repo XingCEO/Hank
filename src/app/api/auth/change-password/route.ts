@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth/request";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { passwordPolicySchema } from "@/lib/auth/password-policy";
 import { createAuditLog } from "@/lib/audit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { getClientIpFromRequest, guardSameOrigin } from "@/lib/security/request-guard";
 
 const changePasswordSchema = z
@@ -31,6 +32,18 @@ export async function PATCH(req: Request) {
   }
 
   const { session } = auth;
+
+  const rateLimit = consumeRateLimit({
+    key: `auth:change-password:${session.userId}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, message: "密碼變更嘗試太頻繁，請 15 分鐘後再試。" },
+      { status: 429 },
+    );
+  }
 
   try {
     const body = changePasswordSchema.parse(await req.json());
@@ -60,7 +73,10 @@ export async function PATCH(req: Request) {
     const passwordHash = await hashPassword(body.newPassword);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     await createAuditLog({

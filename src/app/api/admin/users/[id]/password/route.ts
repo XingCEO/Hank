@@ -72,7 +72,10 @@ export async function PATCH(req: Request, context: RouteContext) {
     const passwordHash = await hashPassword(body.newPassword);
     await prisma.user.update({
       where: { id: target.id },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     await createAuditLog({
